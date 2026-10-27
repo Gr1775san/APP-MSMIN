@@ -183,6 +183,62 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-o
 .gate .center p{color:var(--ink2);font-size:14px}
 .loading{position:fixed;inset:0;z-index:55;background:var(--bg);display:grid;place-items:center;color:var(--ink2);font-size:14px}
 
+/* Tarjeta de app: toda la fila superior abre la app; accesos secundarios abajo */
+.card{padding:0;gap:0;overflow:hidden}
+.card-main{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:inherit;padding:14px 14px 12px;cursor:pointer;min-height:64px}
+.card-main:active{background:var(--surface2)}
+.card-main .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;color:#fff;font:700 15px var(--display, "IBM Plex Sans Condensed"),sans-serif;flex:none;background:var(--c,var(--btn))}
+.card-main .tx{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.card-main h3{margin:0;font-size:16.5px;line-height:1.25}
+.card-main .area{font-size:12.5px;color:var(--ink3)}
+.card-main .desc{font-size:13px;color:var(--ink2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-main .chev{width:20px;height:20px;color:var(--ink3);flex:none}
+.acc{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;padding:0 8px 8px 62px}
+.acc a,.acc button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 8px;border:0;border-radius:8px;background:none;color:var(--slate2);font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer}
+.acc a:active,.acc button:active{background:var(--surface2)}
+.acc svg{width:15px;height:15px}
+.acc .pend{padding:6px 8px;margin:0 0 4px}
+
+.user .ini{display:none}
+button,a,.card-main{touch-action:manipulation}
+.top,.bnav,.vbar{-webkit-user-select:none;user-select:none}
+html{-webkit-text-size-adjust:100%}
+
+/* ===== Teléfono ===== */
+@media (max-width:959px){
+  .ttl small{display:none}
+  .ttl h1{font-size:16px}
+  .user{width:38px;height:38px;padding:0;border-radius:50%;display:grid;place-items:center;max-width:none;background:var(--btn);color:#fff}
+  .user .ini{display:block;font:700 15px "IBM Plex Sans Condensed",sans-serif}
+  .user .nm{display:none}
+  .pad{padding-top:14px}
+  .sec-h h2{font-size:20px}
+  .sec-h p{font-size:13px}
+  /* Visor a pantalla completa: sin encabezado ni menú inferior */
+  body.en-app .top, body.en-app .bnav{display:none!important}
+  body.en-app .shell{height:100%}
+  body.en-app .vbar{height:calc(52px + var(--sat));padding-top:var(--sat);background:var(--slate)}
+  body.en-app .frame-wrap{top:calc(52px + var(--sat));bottom:0}
+  body.en-app .frame-tip{bottom:calc(14px + var(--sab))}
+  body.en-app .toast{bottom:calc(18px + var(--sab))}
+  .vbar .ib{height:40px;min-width:40px;justify-content:center}
+}
+/* Listas de administración como tarjetas en pantallas angostas */
+@media (max-width:719px){
+  .tbl-wrap thead{display:none}
+  .tbl-wrap table,.tbl-wrap tbody{display:block}
+  .tbl-wrap tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:start}
+  .tbl-wrap tbody tr:last-child{border-bottom:0}
+  .tbl-wrap td{padding:0;border:0}
+  .tbl-wrap td.empty{grid-column:1/-1}
+  #tbl td:nth-child(1){display:none}
+  #tbl td:nth-child(2){grid-column:1;grid-row:1}
+  #tbl td:nth-child(4){grid-column:2;grid-row:1}
+  #tbl td.url{grid-column:1/-1;grid-row:2;max-width:none}
+  #tblU td:nth-child(1){grid-column:1;grid-row:1/3}
+  #tblU td:nth-child(2){grid-column:2;grid-row:1;text-align:right}
+  #tblU td:nth-child(3){grid-column:2;grid-row:2;text-align:right}
+}
 @media (min-width:720px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (min-width:960px){
   .side{display:block}
@@ -382,6 +438,10 @@ var CFG = {
 var sb = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'msmin.sesion' } });
 
 var S = { apps: [], usuarios: [], actual: null, view: 'inicio', email: '', rol: null, offline: false };
+var ICO = {
+  ext: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  bd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>'
+};
 var COLS = ['#2A6CB0', '#C77700', '#2E8B57', '#7D5BB5', '#1F8A9C', '#B5523F', '#3D7F5F'];
 
 function $(s) { return document.querySelector(s); }
@@ -485,6 +545,7 @@ function entrar() {
 
 function abrirShell() {
   $('#loading').hidden = true; $('#gate').hidden = true;
+  history.replaceState({ v: 'inicio' }, ''); S.view = 'inicio';
   ['#top', '#shell', '#bnav'].forEach(function (s) { $(s).hidden = false; });
   pintar();
   var q = new URLSearchParams(location.search).get('app');
@@ -506,9 +567,18 @@ function cargar() {
 function recargar() { return cargar().then(pintar).catch(function (e) { toast(msgErr(e), true); }); }
 
 /* ===== Vista ===== */
-function ir(v) {
+function ir(v, desdeHist) {
   if (v === 'app' && !S.actual) v = 'inicio';
   S.view = v;
+  document.body.classList.toggle('en-app', v === 'app');
+  if (!desdeHist && !S.volviendo) {
+    var st = history.state || {}, cur = st.v || 'inicio';
+    if (!st.panel && v !== cur) {
+      if (v === 'inicio') { S.volviendo = true; history.back(); } // vuelve sobre el historial: Atrás queda coherente
+      else if (cur === 'inicio') history.pushState({ v: v }, '');
+      else history.replaceState({ v: v }, '');
+    }
+  }
   $$('.view').forEach(function (x) { x.classList.toggle('on', x.id === 'v-' + v); });
   $$('.bnav button').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.go === v)); });
   $$('.side .nav-it').forEach(function (b) {
@@ -518,7 +588,9 @@ function ir(v) {
 }
 
 function pintar() {
-  $('#tUser').textContent = S.email.split('@')[0] || 'Cuenta';
+  var nom = S.email.split('@')[0] || 'Cuenta';
+  $('#tUser').innerHTML = '<span class="ini">' + esc(nom.charAt(0).toUpperCase()) + '</span><span class="nm">' + esc(nom) + '</span>';
+  $('#tUser').setAttribute('aria-label', 'Ajustes de ' + S.email);
   $('#offline').hidden = !S.offline;
   $('#cEmail').textContent = S.email;
   $('#cRol').textContent = esAdmin() ? 'Administrador' : 'Usuario';
@@ -532,13 +604,15 @@ function pintar() {
   }).join('') || '<div class="note" style="padding:0 8px">Sin apps visibles.</div>';
 
   $('#cards').innerHTML = vs.map(function (a) {
-    return '<article class="card" style="--c:' + color(a) + '"><div class="hd"><span class="ic">' + esc(sigla(a.nombre)) + '</span><div><h3>' + esc(a.nombre) + '</h3><div class="area">' + esc(a.area || '') + '</div></div></div>' +
-      '<p>' + esc(a.descripcion || '') + '</p>' +
+    return '<article class="card" style="--c:' + color(a) + '">' +
+      '<button class="card-main" data-app="' + esc(a.id) + '" aria-label="Abrir ' + esc(a.nombre) + '"><span class="ic">' + esc(sigla(a.nombre)) + '</span>' +
+        '<span class="tx"><h3>' + esc(a.nombre) + '</h3><span class="area">' + esc(a.area || '') + '</span>' + (a.descripcion ? '<span class="desc">' + esc(a.descripcion) + '</span>' : '') + '</span>' +
+        (a.url ? '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>' : '') + '</button>' +
       (a.url
-        ? '<div class="row"><button class="btn pri" data-app="' + esc(a.id) + '">Abrir</button><a class="btn sec" href="' + esc(a.url) + '" target="_blank" rel="noopener">Abrir aparte</a>' +
-          (a.planilla_url ? '<a class="btn sec" href="' + esc(a.planilla_url) + '" target="_blank" rel="noopener">Base de datos</a>' : '') + '</div>'
-        : '<div class="pend">Esta app todavía no tiene enlace.' + (esAdmin() ? '' : ' Avísale al administrador.') + '</div>' +
-          (esAdmin() ? '<div class="row"><button class="btn sec" data-edit="' + esc(a.id) + '">Agregar enlace</button></div>' : '')) +
+        ? '<div class="acc"><a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + ICO.ext + 'Abrir aparte</a>' +
+          (a.planilla_url ? '<a href="' + esc(a.planilla_url) + '" target="_blank" rel="noopener">' + ICO.bd + 'Base de datos</a>' : '') + '</div>'
+        : '<div class="acc"><span class="pend">Sin enlace todavía.' + (esAdmin() ? '' : ' Avísale al administrador.') + '</span>' +
+          (esAdmin() ? '<button data-edit="' + esc(a.id) + '">Agregar enlace</button>' : '') + '</div>') +
       '</article>';
   }).join('') || '<div class="empty">Todavía no hay apps.' + (esAdmin() ? ' Agrega la primera en Ajustes.' : '') + '</div>';
 
@@ -603,8 +677,23 @@ $('#bVolver').addEventListener('click', function () { ir('inicio'); });
 $('#bRecargar').addEventListener('click', function () { if (S.actual) cargarFrame(); });
 
 /* ===== Paneles ===== */
-function abrirPanel(id) { $('#scrim').classList.add('on'); $(id).classList.add('on'); }
-function cerrar() { $('#scrim').classList.remove('on'); $$('.panel').forEach(function (p) { p.classList.remove('on'); }); }
+function panelAbierto() { return $$('.panel').some(function (p) { return p.classList.contains('on'); }); }
+function abrirPanel(id) {
+  if (!panelAbierto()) history.pushState({ v: S.view, panel: true }, '');
+  $('#scrim').classList.add('on'); $(id).classList.add('on');
+}
+function cerrarPanelSolo() { $('#scrim').classList.remove('on'); $$('.panel').forEach(function (p) { p.classList.remove('on'); }); }
+function cerrar() {
+  if (!panelAbierto()) return;
+  if ((history.state || {}).panel && !S.volviendo) { S.volviendo = true; history.back(); } else cerrarPanelSolo();
+}
+window.addEventListener('popstate', function (e) {
+  if ($('#shell').hidden) return;
+  var st = e.state || {};
+  S.volviendo = false;
+  if (panelAbierto()) cerrarPanelSolo();
+  ir(st.v || 'inicio', true);
+});
 $$('[data-cerrar]').forEach(function (b) { b.addEventListener('click', cerrar); });
 $('#scrim').addEventListener('click', cerrar);
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrar(); });
