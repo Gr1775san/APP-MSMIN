@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'cl.msmin.estructural'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'cl.msmin.estructural'
+        minSdk 21
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '1')
+        versionName "1.0.${System.getenv('VERSION_CODE') ?: '1'}"
+    }
+
+    // La firma vive en ../msmin.jks (protegida con contraseña); la contraseña llega del secreto ANDROID_KEYSTORE_PASS.
+    signingConfigs {
+        release {
+            storeFile file('../msmin.jks')
+            storeType 'pkcs12'
+            storePassword System.getenv('KS_PASS')
+            keyAlias 'msmin'
+            keyPassword System.getenv('KS_PASS')
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MSMIN</string>
+    <string name="launch_url">https://gr1775san.github.io/APP-MSMIN/</string>
+    <string name="asset_statements" translatable="false">[{ \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": { \"namespace\": \"web\", \"site\": \"https://gr1775san.github.io\" } }]</string>
+    <color name="barra">#07111D</color>
+    <color name="fondo">#0B1A2C</color>
+</resources>

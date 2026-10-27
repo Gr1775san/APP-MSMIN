@@ -1,0 +1,52 @@
+name: APK Android
+
+# Compila la app Android de Estructural MSMIN y la deja en la descarga fija:
+# https://github.com/Gr1775san/APP-MSMIN/releases/latest/download/msmin.apk
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Compilar APK firmado
+        working-directory: android
+        env:
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          if [ -z "$KS_PASS" ]; then
+            echo "::error::Falta el secreto ANDROID_KEYSTORE_PASS (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          gradle assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/msmin.apk"
+
+      - name: Publicar en la descarga fija
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTAS="App Android de Estructural MSMIN (versión ${{ github.run_number }}). Descarga directa: https://github.com/${{ github.repository }}/releases/latest/download/msmin.apk"
+          if gh release view android >/dev/null 2>&1; then
+            gh release upload android msmin.apk --clobber
+            gh release edit android --notes "$NOTAS" --latest
+          else
+            gh release create android msmin.apk --title "Estructural MSMIN · Android" --notes "$NOTAS" --latest
+          fi
