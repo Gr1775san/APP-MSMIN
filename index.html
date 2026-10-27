@@ -976,7 +976,19 @@ $('#bInstalar').addEventListener('click', function () {
 });
 notaInstalar();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+      reg.update().catch(function () {});
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') reg.update().catch(function () {}); });
+    }).catch(function () {});
+  });
+  // Cuando llega una versión nueva, la app se recarga sola una vez (salvo que haya un formulario abierto)
+  var habiaControlador = !!navigator.serviceWorker.controller, recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!habiaControlador) { habiaControlador = true; return; }
+    if (recargando || panelAbierto()) return;
+    recargando = true; location.reload();
+  });
 }
 window.addEventListener('online', function () { if (S.offline) entrar().catch(function () {}); });
 
