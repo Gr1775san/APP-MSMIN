@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Estructural MSMIN</title>
+<meta name="description" content="Apps de inspección de Ingeniería de mantenimiento · Contrato 4600030865">
+<meta name="theme-color" content="#07111D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MSMIN">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#0B1A2C;--surface:#12253B;--surface2:#183049;--ink:#E9EFF5;--ink2:#B4C3D2;--ink3:#8399AE;
+  --line:#244260;--slate:#07111D;--slate2:#6FB0E6;--btn:#2A6CB0;--amber:#E8A317;--crit:#F08A80;--ok:#7FD69A;--ok-bg:rgba(76,175,110,.18);
+  --warn:#F3C35B;--warn-bg:rgba(232,163,23,.14);
+  --radius:12px;--shadow:0 1px 2px rgba(0,0,0,.35),0 6px 18px rgba(0,0,0,.28);
+  --sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
+  --top:calc(58px + var(--sat));--nav:62px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none}
+h1,h2,h3{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;letter-spacing:.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+.top{height:var(--top);padding:var(--sat) 14px 0;background:var(--slate);border-bottom:1px solid var(--line);color:#fff;display:flex;align-items:center;gap:12px;position:relative;z-index:5}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--amber);display:grid;place-items:center;flex:none}
+.mark svg{width:20px;height:20px;color:#07111D}
+.ttl{min-width:0;flex:1}
+.ttl h1{margin:0;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl small{display:block;color:var(--ink3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user{font-size:12px;color:#D5E1E8;background:rgba(255,255,255,.1);border:0;border-radius:999px;padding:6px 10px;max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.offline{position:absolute;left:50%;transform:translateX(-50%);bottom:-26px;background:var(--warn-bg);color:var(--warn);border:1px solid rgba(232,163,23,.35);font-size:12px;border-radius:999px;padding:3px 10px;white-space:nowrap}
+
+.shell{display:flex;height:calc(100% - var(--top))}
+.side{display:none;width:270px;flex:none;background:var(--surface);border-right:1px solid var(--line);overflow:auto;padding:12px 10px}
+.side h4{margin:10px 8px 6px;font:600 11.5px "IBM Plex Sans",sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
+.nav-it{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:10px;padding:10px;cursor:pointer;color:var(--ink2)}
+.nav-it:hover{background:var(--surface2)}
+.nav-it[aria-current="true"]{background:rgba(111,176,230,.16);color:#fff;font-weight:600}
+.nav-it .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;font:700 12px "IBM Plex Sans Condensed",sans-serif;color:#fff}
+.nav-it .tx{min-width:0;flex:1}
+.nav-it .tx b{display:block;font-weight:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-it .tx span{display:block;font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.main{flex:1;min-width:0;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none;overflow:auto;-webkit-overflow-scrolling:touch}
+.view.on{display:block}
+.pad{max-width:1180px;margin:0 auto;padding:18px 16px calc(var(--nav) + var(--sab) + 30px)}
+.sec-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 14px}
+.sec-h h2{margin:0;font-size:22px}
+.sec-h p{margin:3px 0 0;color:var(--ink2);font-size:13.5px}
+.sec-h.sub{margin-top:28px}
+.sec-h.sub h2{font-size:19px}
+
+.cards{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-top:4px solid var(--c,var(--btn))}
+.card .hd{display:flex;align-items:center;gap:10px}
+.card .hd .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font:700 14px "IBM Plex Sans Condensed",sans-serif;flex:none;background:var(--c,var(--btn))}
+.card h3{margin:0;font-size:17px;line-height:1.2}
+.card .area{font-size:12px;color:var(--ink3)}
+.card p{margin:0;color:var(--ink2);font-size:13.5px;flex:1}
+.card .row{display:flex;gap:8px;flex-wrap:wrap}
+.pend{font-size:12.5px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:7px 10px}
+
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;font-size:14px}
+.btn.pri{background:var(--btn);color:#fff}
+.btn.amb{background:var(--amber);color:#07111D}
+.btn.sec{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.dan{background:none;color:var(--crit);border:1px solid rgba(240,138,128,.45)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:16px;height:16px}
+
+/* Visor de app */
+#v-app{overflow:hidden}
+.vbar{height:48px;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.vbar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:700 15px "IBM Plex Sans Condensed",sans-serif}
+.ib{background:none;border:1px solid var(--line);border-radius:9px;height:36px;padding:0 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);text-decoration:none;white-space:nowrap}
+.ib svg{width:16px;height:16px}
+.ib .lb{display:none}
+.frame-wrap{position:absolute;top:48px;left:0;right:0;bottom:calc(var(--nav) + var(--sab));background:var(--bg)}
+.frame-wrap iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+.frame-help{position:absolute;inset:0;display:none;place-items:center;padding:20px;background:var(--bg);text-align:center}
+.frame-help.on{display:grid}
+.frame-help>div{max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.frame-help b{font-size:16px}.frame-help p{color:var(--ink2);font-size:14px;line-height:1.5;margin:8px 0 14px}
+.frame-help .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.frame-tip{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 14px;font-size:13px;color:var(--ink2);box-shadow:var(--shadow);white-space:nowrap}
+.frame-tip.on{display:flex}
+.frame-tip a{color:var(--slate2);font-weight:600;text-decoration:none}
+.frame-tip button{border:0;background:transparent;color:var(--ink3);font-size:18px;cursor:pointer;width:28px;height:28px;border-radius:50%}
+.frame-load{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink2);font-size:14px;pointer-events:none}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Ajustes */
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;font-size:14px;margin:0 0 14px}
+.kv dt{color:var(--ink3)} .kv dd{margin:0;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.tbl-wrap{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{background:var(--surface2);text-align:left;font-weight:600;color:var(--ink2);padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.url{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink3);font-size:12.5px}
+td small{display:block;color:var(--ink3);font-size:12px}
+tbody tr[data-edit],tbody tr[data-user]{cursor:pointer} tbody tr[data-edit]:hover,tbody tr[data-user]:hover{background:var(--surface2)}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;background:var(--surface2);color:var(--ink2);white-space:nowrap}
+.badge.si{background:var(--ok-bg);color:var(--ok)}
+.badge.wa{background:var(--warn-bg);color:var(--warn)}
+.badge.ad{background:rgba(111,176,230,.16);color:var(--slate2)}
+.note{font-size:12.5px;color:var(--ink3);margin:10px 0 0;line-height:1.5}
+
+/* Panel edición */
+.scrim{position:fixed;inset:0;background:rgba(2,8,15,.65);z-index:40;display:none}
+.scrim.on{display:block}
+.panel{position:fixed;inset:0;z-index:41;background:var(--bg);display:none;flex-direction:column;padding-top:var(--sat)}
+.panel.on{display:flex}
+.p-head{background:var(--surface);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;gap:8px}
+.p-head h3{margin:0;font-size:17px;flex:1}
+.p-body{flex:1;overflow:auto;padding:16px}
+.p-foot{background:var(--surface);border-top:1px solid var(--line);padding:10px 16px calc(10px + var(--sab));display:flex;gap:10px}
+.p-foot .pri{flex:1}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.fld input,.fld select,.fld textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px}
+.fld textarea{min-height:70px;resize:vertical}
+.fld small{display:block;color:var(--ink3);font-size:12px;margin-top:4px}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+::placeholder{color:#5F7890}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:0;border-color:var(--amber)}
+.x{background:none;border:0;width:40px;height:40px;border-radius:10px;font-size:24px;cursor:pointer}
+.code-box{background:var(--surface);border:1px dashed var(--amber);border-radius:var(--radius);padding:14px;margin:4px 0 14px;text-align:center}
+.code-box .lbl{font-size:12.5px;color:var(--ink2)}
+.code-box .code{font:700 30px/1.2 "IBM Plex Sans Condensed",monospace;letter-spacing:.18em;color:var(--amber);margin:6px 0 10px;user-select:all}
+.code-box .acts{justify-content:center}
+
+/* Barra inferior (celular) */
+.bnav{position:fixed;left:0;right:0;bottom:0;height:calc(var(--nav) + var(--sab));padding-bottom:var(--sab);background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);z-index:20}
+.bnav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;color:var(--ink3);cursor:pointer}
+.bnav svg{width:22px;height:22px}
+.bnav button[aria-current="true"]{color:#fff}
+.bnav button[aria-current="true"] svg{color:var(--amber)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + var(--sab) + 18px);background:#E9EFF5;color:#0B1A2C;padding:11px 16px;border-radius:10px;z-index:60;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:calc(100vw - 32px);display:none}
+.toast.on{display:block} .toast.err{background:#B3261E;color:#fff}
+.err-box{background:rgba(179,38,30,.18);color:var(--crit);border-radius:10px;padding:12px;margin-bottom:12px;font-size:14px}
+.empty{text-align:center;color:var(--ink3);padding:30px 10px}
+
+/* Pantalla de acceso */
+.gate{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 70% at 50% 0%,#14304D 0%,var(--bg) 60%);overflow:auto;display:flex;flex-direction:column;align-items:center;padding:calc(28px + var(--sat)) 18px calc(24px + var(--sab))}
+.gate .brand{display:flex;flex-direction:column;align-items:center;text-align:center;margin:10px 0 22px}
+.gate .brand .mark{width:64px;height:64px;border-radius:16px;margin-bottom:14px}
+.gate .brand .mark svg{width:36px;height:36px}
+.gate h1{margin:0;font-size:26px}
+.gate .brand p{margin:4px 0 0;color:var(--ink3);font-size:13px}
+.gate .box{width:100%;max-width:400px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px;margin-bottom:16px}
+.seg button{border:0;background:none;border-radius:8px;padding:9px;font-weight:600;font-size:14px;color:var(--ink3);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:#fff}
+.gate .help{font-size:12.5px;color:var(--ink3);margin:0 0 14px;line-height:1.5}
+.gate .msg{font-size:13.5px;border-radius:10px;padding:10px 12px;margin:0 0 12px;display:none}
+.gate .msg.on{display:block}
+.gate .msg.err{background:rgba(179,38,30,.18);color:var(--crit)}
+.gate .msg.ok{background:var(--ok-bg);color:var(--ok)}
+.gate .foot{margin-top:18px;font-size:12px;color:var(--ink3);text-align:center;max-width:400px}
+.gate .center{text-align:center}
+.gate .center p{color:var(--ink2);font-size:14px}
+.loading{position:fixed;inset:0;z-index:55;background:var(--bg);display:grid;place-items:center;color:var(--ink2);font-size:14px}
+
+@media (min-width:720px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (min-width:960px){
+  .side{display:block}
+  .bnav{display:none}
+  .frame-wrap{bottom:0}
+  .pad{padding:24px 26px 40px}
+  .ib .lb{display:inline}
+  .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .toast{bottom:28px}
+  .panel{inset:0 0 0 auto;width:min(520px,100vw);box-shadow:-10px 0 30px rgba(0,0,0,.15)}
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading"><div><div class="spin"></div>Cargando&#8230;</div></div>
+
+<!-- ============ ACCESO ============ -->
+<section class="gate" id="gate" hidden>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+    <h1>Estructural MSMIN</h1>
+    <p>Ingeniería de mantenimiento · Contrato 4600030865</p>
+  </div>
+
+  <div class="box" id="gForm">
+    <div class="seg" role="group" aria-label="Modo de acceso">
+      <button id="sIngresar" aria-pressed="true">Ingresar</button>
+      <button id="sActivar" aria-pressed="false">Activar cuenta</button>
+    </div>
+    <div class="msg" id="gMsg"></div>
+
+    <form id="fIngresar" autocomplete="on">
+      <div class="fld"><label for="lEmail">Correo</label><input id="lEmail" type="email" autocomplete="username" inputmode="email" required></div>
+      <div class="fld"><label for="lPass">Contraseña</label><input id="lPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn amb full" id="bIngresar" type="submit">Ingresar</button>
+      <p class="note" style="text-align:center">¿Olvidaste la contraseña? Pide un código nuevo al administrador y usa <b>Activar cuenta</b>.</p>
+    </form>
+
+    <form id="fActivar" hidden autocomplete="on">
+      <p class="help">Usa el código que te dio el administrador. Sirve para entrar la primera vez o para cambiar una contraseña olvidada.</p>
+      <div class="fld"><label for="aEmail">Correo</label><input id="aEmail" type="email" autocomplete="username" inputmode="email" required></div>
+      <div class="fld"><label for="aCodigo">Código de invitación</label><input id="aCodigo" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="Ej: 4F9A21C0" required style="letter-spacing:.12em;text-transform:uppercase"></div>
+      <div class="fld"><label for="aPass">Contraseña nueva</label><input id="aPass" type="password" autocomplete="new-password" minlength="8" required><small>Mínimo 8 caracteres.</small></div>
+      <div class="fld"><label for="aPass2">Repite la contraseña</label><input id="aPass2" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn amb full" id="bActivar" type="submit">Activar y entrar</button>
+    </form>
+  </div>
+
+  <div class="box center" id="gSinAcceso" hidden>
+    <b style="font-size:16px">Tu cuenta no tiene acceso</b>
+    <p id="gSinAccesoTx">Pide al administrador que te agregue al equipo.</p>
+    <button class="btn sec full" id="bSalir2">Cerrar sesión</button>
+  </div>
+
+  <p class="foot">Instala la app en tu teléfono: en Android, menú &#8942; &#8250; <b>Instalar app</b>; en iPhone, Compartir &#8250; <b>Agregar a inicio</b>.</p>
+</section>
+
+<!-- ============ APP ============ -->
+<header class="top" id="top" hidden>
+  <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+  <div class="ttl"><h1>Estructural MSMIN</h1><small>Ingeniería de mantenimiento · Contrato 4600030865</small></div>
+  <button class="user" id="tUser" data-go="ajustes"></button>
+  <span class="offline" id="offline" hidden>Sin conexión · lista guardada</span>
+</header>
+
+<div class="shell" id="shell" hidden>
+  <aside class="side">
+    <button class="nav-it" data-go="inicio"><span class="ic" style="background:var(--btn)">&#8962;</span><span class="tx"><b>Inicio</b><span>Todas las aplicaciones</span></span></button>
+    <h4>Aplicaciones</h4>
+    <div id="sideApps"></div>
+    <h4>Cuenta</h4>
+    <button class="nav-it" data-go="ajustes"><span class="ic" style="background:#4A6075">&#9881;</span><span class="tx"><b>Ajustes</b><span id="sideAjTx">Mi cuenta</span></span></button>
+  </aside>
+
+  <main class="main">
+    <section class="view" id="v-inicio"><div class="pad">
+      <div class="sec-h"><div><h2>Aplicaciones</h2><p>Elige una app para trabajar en ella sin salir de MSMIN.</p></div></div>
+      <div id="listErr"></div>
+      <div class="cards" id="cards"></div>
+    </div></section>
+
+    <section class="view" id="v-app">
+      <div class="vbar">
+        <button class="ib" id="bVolver" title="Volver al inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg><span class="lb">Inicio</span></button>
+        <b id="vTitulo"></b>
+        <button class="ib" id="bRecargar" title="Recargar la app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg><span class="lb">Recargar</span></button>
+        <a class="ib" id="bPlanilla" target="_blank" rel="noopener" title="Abrir la base de datos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg><span class="lb">Base de datos</span></a>
+        <a class="ib" id="bNueva" target="_blank" rel="noopener" title="Abrir en el navegador"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg><span class="lb">Abrir aparte</span></a>
+      </div>
+      <div class="frame-wrap">
+        <div class="frame-load" id="fLoad"><div><div class="spin"></div>Abriendo la app&#8230;</div></div>
+        <iframe id="frame" title="Aplicación" allow="clipboard-write; camera; geolocation"></iframe>
+        <div class="frame-help" id="fHelp"><div>
+          <b>La app no terminó de abrir aquí</b>
+          <p>Algunas cuentas de Google bloquean apps dentro de otra página. Ábrela aparte en el navegador: funciona igual.</p>
+          <div class="row"><a class="btn pri" id="fHelpNueva" target="_blank" rel="noopener">Abrir aparte</a><button class="btn sec" id="fHelpReint">Reintentar</button></div>
+        </div></div>
+        <div class="frame-tip" id="fTip"><span>¿Se ve en blanco?</span><a id="fTipNueva" target="_blank" rel="noopener">Abrir aparte</a><button id="fTipX" aria-label="Cerrar">&#215;</button></div>
+      </div>
+    </section>
+
+    <section class="view" id="v-ajustes"><div class="pad">
+      <div class="sec-h"><div><h2>Mi cuenta</h2></div></div>
+      <div class="box">
+        <dl class="kv"><dt>Correo</dt><dd id="cEmail"></dd><dt>Rol</dt><dd id="cRol"></dd></dl>
+        <div class="acts">
+          <button class="btn amb" id="bInstalar" hidden>Instalar app</button>
+          <button class="btn sec" id="bClave">Cambiar contraseña</button>
+          <button class="btn dan" id="bSalir">Cerrar sesión</button>
+        </div>
+        <p class="note" id="instNota"></p>
+      </div>
+
+      <div id="adminZona" hidden>
+        <div class="sec-h sub"><div><h2>Apps</h2><p>Las apps que agregues aquí aparecen para todo el equipo.</p></div>
+          <button class="btn pri" id="bNuevaApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar app</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>App</th><th>Enlace</th><th>Visible</th></tr></thead><tbody id="tbl"></tbody></table></div>
+
+        <div class="sec-h sub"><div><h2>Equipo</h2><p>Quiénes pueden entrar. Cada persona activa su cuenta con un código.</p></div>
+          <button class="btn pri" id="bNuevoUser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar persona</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Rol</th><th>Estado</th></tr></thead><tbody id="tblU"></tbody></table></div>
+        <p class="note">Toca una fila para editarla, ver su código o darle uno nuevo si olvidó la contraseña.</p>
+      </div>
+    </div></section>
+  </main>
+</div>
+
+<nav class="bnav" id="bnav" hidden>
+  <button data-go="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Inicio</button>
+  <button data-go="app" id="navApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg><span id="navAppTx">App abierta</span></button>
+  <button data-go="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Ajustes</button>
+</nav>
+
+<!-- Panel: app -->
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="pApp" role="dialog" aria-modal="true">
+  <div class="p-head"><h3 id="pTitulo">Agregar app</h3><button class="x" data-cerrar aria-label="Cerrar">&#215;</button></div>
+  <div class="p-body">
+    <input type="hidden" id="fId">
+    <div class="fld"><label for="fNombre">Nombre</label><input id="fNombre" placeholder="Ej: Inspección puente apilador 210-CV-03"></div>
+    <div class="fld"><label for="fUrl">Enlace de la app web</label><input id="fUrl" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec">
+      <small>En el proyecto de la app: Implementar &#8250; Gestionar implementaciones &#8250; copiar la URL de la aplicación web.</small></div>
+    <div class="fld"><label for="fArea">Área / equipo</label><input id="fArea" placeholder="Ej: Puente apilador 210-CV-03"></div>
+    <div class="fld"><label for="fDesc">Descripción</label><textarea id="fDesc" placeholder="Para qué sirve la app"></textarea></div>
+    <div class="fld"><label for="fPlanilla">Enlace de su base de datos (opcional)</label><input id="fPlanilla" inputmode="url" placeholder="https://docs.google.com/spreadsheets/..."></div>
+    <div class="frow">
+      <div class="fld"><label for="fOrden">Orden en el menú</label><input id="fOrden" type="number" min="1" inputmode="numeric"></div>
+      <div class="fld"><label for="fActivo">Visible</label><select id="fActivo"><option value="SI">Sí</option><option value="NO">No (oculta)</option></select></div>
+    </div>
+  </div>
+  <div class="p-foot"><button class="btn dan" id="pEliminar">Quitar</button><button class="btn pri" id="pGuardar">Guardar</button></div>
+</aside>
+
+<!-- Panel: persona del equipo -->
+<aside class="panel" id="pUser" role="dialog" aria-modal="true">
+  <div class="p-head"><h3 id="uTitulo">Agregar persona</h3><button class="x" data-cerrar aria-label="Cerrar">&#215;</button></div>
+  <div class="p-body">
+    <div class="code-box" id="uCodeBox" hidden>
+      <div class="lbl" id="uCodeLbl">Código de invitación</div>
+      <div class="code" id="uCode"></div>
+      <div class="acts"><button class="btn amb" id="uCompartir">Enviar invitación</button><button class="btn sec" id="uCopiar">Copiar</button></div>
+    </div>
+    <div class="fld"><label for="uEmail">Correo</label><input id="uEmail" type="email" inputmode="email" placeholder="nombre@empresa.cl"><small id="uEmailNota">Con este correo entrará a la app.</small></div>
+    <div class="fld"><label for="uNombre">Nombre</label><input id="uNombre" placeholder="Ej: Juan Pérez"></div>
+    <div class="frow">
+      <div class="fld"><label for="uRol">Rol</label><select id="uRol"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
+      <div class="fld"><label for="uActivo">Acceso</label><select id="uActivo"><option value="SI">Permitido</option><option value="NO">Bloqueado</option></select></div>
+    </div>
+    <p class="note">Usuario: ve y usa las apps. Administrador: además agrega apps y personas.</p>
+    <button class="btn sec full" id="uNuevoCodigo" hidden style="margin-top:8px">Generar código nuevo (olvidó la contraseña)</button>
+  </div>
+  <div class="p-foot"><button class="btn dan" id="uEliminar">Quitar</button><button class="btn pri" id="uGuardar">Guardar</button></div>
+</aside>
+
+<!-- Panel: contraseña -->
+<aside class="panel" id="pClave" role="dialog" aria-modal="true">
+  <div class="p-head"><h3>Cambiar contraseña</h3><button class="x" data-cerrar aria-label="Cerrar">&#215;</button></div>
+  <div class="p-body">
+    <div class="fld"><label for="kPass">Contraseña nueva</label><input id="kPass" type="password" autocomplete="new-password" minlength="8"><small>Mínimo 8 caracteres.</small></div>
+    <div class="fld"><label for="kPass2">Repite la contraseña</label><input id="kPass2" type="password" autocomplete="new-password" minlength="8"></div>
+  </div>
+  <div class="p-foot"><button class="btn pri" id="kGuardar">Guardar contraseña</button></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Configuración =====
+   La clave publicable es pública por diseño: los permisos los controla Supabase (RLS) según el usuario conectado. */
+var CFG = {
+  SB_URL: 'https://cklbhuqjhsxvtcdwerxr.supabase.co',
+  SB_KEY: 'sb_publishable_osYXaqxzeK_zdu2XaqutBg_XkshjB8X',
+  CACHE: 'msmin.apps.v1'
+};
+var sb = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'msmin.sesion' } });
+
+var S = { apps: [], usuarios: [], actual: null, view: 'inicio', email: '', rol: null, offline: false };
+var COLS = ['#2A6CB0', '#C77700', '#2E8B57', '#7D5BB5', '#1F8A9C', '#B5523F', '#3D7F5F'];
+
+function $(s) { return document.querySelector(s); }
+function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function sigla(n) { var p = String(n || '?').replace(/[^\wÁÉÍÓÚÑáéíóúñ ]/g, ' ').trim().split(/\s+/); return ((p[0] || '?').charAt(0) + (p[1] ? p[1].charAt(0) : '')).toUpperCase(); }
+function color(a) { var i = S.apps.indexOf(a); return COLS[(i < 0 ? 0 : i) % COLS.length]; }
+function visibles() { return S.apps.filter(function (a) { return a.activo !== 'NO'; }); }
+function esAdmin() { return S.rol === 'admin'; }
+function toast(m, err) { var t = $('#toast'); t.textContent = m; t.className = 'toast on' + (err ? ' err' : ''); clearTimeout(t._h); t._h = setTimeout(function () { t.className = 'toast'; }, err ? 7000 : 3200); }
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function msgErr(e) {
+  var m = (e && (e.message || e.error_description || e.error)) || String(e);
+  if (/Invalid login credentials/i.test(m)) return 'Correo o contraseña incorrectos.';
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Sin conexión. Revisa la señal e intenta de nuevo.';
+  if (/row-level security|permission denied/i.test(m)) return 'No tienes permiso para hacer esto.';
+  if (/duplicate key/i.test(m)) return 'Ese correo ya está en el equipo.';
+  return m;
+}
+function codigoNuevo() { var b = new Uint8Array(4); crypto.getRandomValues(b); return Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('').toUpperCase(); }
+
+/* ===== Acceso ===== */
+function modoGate(m) {
+  $('#sIngresar').setAttribute('aria-pressed', String(m === 'ingresar'));
+  $('#sActivar').setAttribute('aria-pressed', String(m === 'activar'));
+  $('#fIngresar').hidden = m !== 'ingresar';
+  $('#fActivar').hidden = m !== 'activar';
+  gMsg('');
+}
+function gMsg(t, ok) { var e = $('#gMsg'); e.textContent = t; e.className = 'msg' + (t ? ' on ' + (ok ? 'ok' : 'err') : ''); }
+function mostrarGate(sinAcceso, texto) {
+  $('#loading').hidden = true;
+  $('#gate').hidden = false;
+  ['#top', '#shell', '#bnav'].forEach(function (s) { $(s).hidden = true; });
+  $('#gForm').hidden = !!sinAcceso;
+  $('#gSinAcceso').hidden = !sinAcceso;
+  if (texto) $('#gSinAccesoTx').textContent = texto;
+}
+$('#sIngresar').addEventListener('click', function () { modoGate('ingresar'); });
+$('#sActivar').addEventListener('click', function () { modoGate('activar'); });
+
+$('#fIngresar').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var b = $('#bIngresar'); b.disabled = true; b.textContent = 'Ingresando…'; gMsg('');
+  sb.auth.signInWithPassword({ email: $('#lEmail').value.trim().toLowerCase(), password: $('#lPass').value })
+    .then(function (r) { if (r.error) throw r.error; return entrar(); })
+    .catch(function (e) { gMsg(msgErr(e)); })
+    .then(function () { b.disabled = false; b.textContent = 'Ingresar'; });
+});
+
+$('#fActivar').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var email = $('#aEmail').value.trim().toLowerCase(), codigo = $('#aCodigo').value.trim().toUpperCase(), p1 = $('#aPass').value, p2 = $('#aPass2').value;
+  if (p1.length < 8) { gMsg('La contraseña debe tener al menos 8 caracteres.'); return; }
+  if (p1 !== p2) { gMsg('Las contraseñas no coinciden.'); return; }
+  var b = $('#bActivar'); b.disabled = true; b.textContent = 'Activando…'; gMsg('');
+  fetch(CFG.SB_URL + '/functions/v1/portal-activar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CFG.SB_KEY },
+    body: JSON.stringify({ email: email, codigo: codigo, password: p1 })
+  }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'No se pudo activar la cuenta'); return j; }); })
+    .then(function () { return sb.auth.signInWithPassword({ email: email, password: p1 }); })
+    .then(function (r) { if (r.error) throw r.error; $('#fActivar').reset(); return entrar(); })
+    .catch(function (e) { gMsg(msgErr(e)); })
+    .then(function () { b.disabled = false; b.textContent = 'Activar y entrar'; });
+});
+
+function salir() {
+  sb.auth.signOut().catch(function () {}).then(function () {
+    lsDel(CFG.CACHE); S.apps = []; S.usuarios = []; S.actual = null; S.rol = null; $('#frame').removeAttribute('src');
+    $('#fIngresar').reset(); modoGate('ingresar'); mostrarGate(false);
+  });
+}
+$('#bSalir').addEventListener('click', function () { if (confirm('¿Cerrar sesión en este teléfono?')) salir(); });
+$('#bSalir2').addEventListener('click', salir);
+
+/* Sesión guardada → entrar directo. Sin señal → abrir con la lista guardada. */
+function entrar() {
+  return sb.auth.getSession().then(function (r) {
+    var ses = r.data && r.data.session;
+    if (!ses) { mostrarGate(false); return; }
+    S.email = (ses.user && ses.user.email) || '';
+    return sb.rpc('portal_rol').then(function (q) {
+      if (q.error) throw q.error;
+      S.rol = q.data || null;
+      if (!S.rol) { mostrarGate(true, 'La cuenta ' + S.email + ' no está en el equipo o fue bloqueada. Pide acceso al administrador.'); return; }
+      S.offline = false;
+      lsSet('msmin.rol', { email: S.email, rol: S.rol });
+      return cargar().then(abrirShell);
+    }).catch(function (e) {
+      // Sin señal: si este teléfono ya entró antes, se abre con lo guardado
+      var c = lsGet(CFG.CACHE), r2 = lsGet('msmin.rol');
+      if (/Failed to fetch|NetworkError|Load failed/i.test(String(e && e.message)) && c && r2 && r2.email === S.email) {
+        S.offline = true; S.rol = r2.rol; S.apps = c; abrirShell(); return;
+      }
+      throw e;
+    });
+  });
+}
+
+function abrirShell() {
+  $('#loading').hidden = true; $('#gate').hidden = true;
+  ['#top', '#shell', '#bnav'].forEach(function (s) { $(s).hidden = false; });
+  pintar();
+  var q = new URLSearchParams(location.search).get('app');
+  if (q) { q = q.toLowerCase(); var m = S.apps.filter(function (a) { return a.id.toLowerCase() === q || a.nombre.toLowerCase().indexOf(q) >= 0; })[0]; if (m) abrir(m.id); }
+}
+
+/* ===== Datos ===== */
+function deSb(r) {
+  return { id: r.id, orden: r.orden, nombre: r.nombre || '', descripcion: r.descripcion || '', area: r.area || '', url: r.url || '', planilla_url: r.planilla_url || '', activo: r.activo === false ? 'NO' : 'SI' };
+}
+function cargar() {
+  var pa = sb.from('portal_apps').select('*').order('orden').order('nombre').then(function (r) {
+    if (r.error) throw r.error;
+    S.apps = r.data.map(deSb); lsSet(CFG.CACHE, S.apps); $('#listErr').innerHTML = '';
+  });
+  var pu = esAdmin() ? sb.from('portal_usuarios').select('*').order('rol').order('email').then(function (r) { if (r.error) throw r.error; S.usuarios = r.data; }) : Promise.resolve();
+  return Promise.all([pa, pu]);
+}
+function recargar() { return cargar().then(pintar).catch(function (e) { toast(msgErr(e), true); }); }
+
+/* ===== Vista ===== */
+function ir(v) {
+  if (v === 'app' && !S.actual) v = 'inicio';
+  S.view = v;
+  $$('.view').forEach(function (x) { x.classList.toggle('on', x.id === 'v-' + v); });
+  $$('.bnav button').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.go === v)); });
+  $$('.side .nav-it').forEach(function (b) {
+    var on = (b.dataset.go === v) || (v === 'app' && S.actual && b.dataset.app === S.actual.id);
+    b.setAttribute('aria-current', String(!!on));
+  });
+}
+
+function pintar() {
+  $('#tUser').textContent = S.email.split('@')[0] || 'Cuenta';
+  $('#offline').hidden = !S.offline;
+  $('#cEmail').textContent = S.email;
+  $('#cRol').textContent = esAdmin() ? 'Administrador' : 'Usuario';
+  $('#sideAjTx').textContent = esAdmin() ? 'Cuenta, apps y equipo' : 'Mi cuenta';
+  $('#adminZona').hidden = !esAdmin();
+
+  var vs = visibles();
+  $('#sideApps').innerHTML = vs.map(function (a) {
+    return '<button class="nav-it" data-app="' + esc(a.id) + '"><span class="ic" style="background:' + color(a) + '">' + esc(sigla(a.nombre)) + '</span>' +
+      '<span class="tx"><b>' + esc(a.nombre) + '</b><span>' + esc(a.area || '') + '</span></span></button>';
+  }).join('') || '<div class="note" style="padding:0 8px">Sin apps visibles.</div>';
+
+  $('#cards').innerHTML = vs.map(function (a) {
+    return '<article class="card" style="--c:' + color(a) + '"><div class="hd"><span class="ic">' + esc(sigla(a.nombre)) + '</span><div><h3>' + esc(a.nombre) + '</h3><div class="area">' + esc(a.area || '') + '</div></div></div>' +
+      '<p>' + esc(a.descripcion || '') + '</p>' +
+      (a.url
+        ? '<div class="row"><button class="btn pri" data-app="' + esc(a.id) + '">Abrir</button><a class="btn sec" href="' + esc(a.url) + '" target="_blank" rel="noopener">Abrir aparte</a>' +
+          (a.planilla_url ? '<a class="btn sec" href="' + esc(a.planilla_url) + '" target="_blank" rel="noopener">Base de datos</a>' : '') + '</div>'
+        : '<div class="pend">Esta app todavía no tiene enlace.' + (esAdmin() ? '' : ' Avísale al administrador.') + '</div>' +
+          (esAdmin() ? '<div class="row"><button class="btn sec" data-edit="' + esc(a.id) + '">Agregar enlace</button></div>' : '')) +
+      '</article>';
+  }).join('') || '<div class="empty">Todavía no hay apps.' + (esAdmin() ? ' Agrega la primera en Ajustes.' : '') + '</div>';
+
+  if (esAdmin()) {
+    $('#tbl').innerHTML = S.apps.map(function (a) {
+      return '<tr data-edit="' + esc(a.id) + '"><td>' + esc(a.orden) + '</td><td><b>' + esc(a.nombre) + '</b><small>' + esc(a.area || '') + '</small></td>' +
+        '<td class="url">' + (a.url ? esc(a.url.replace(/^https:\/\//, '')) : '<span style="color:var(--warn)">Falta el enlace</span>') + '</td>' +
+        '<td><span class="badge' + (a.activo === 'NO' ? '' : ' si') + '">' + (a.activo === 'NO' ? 'OCULTA' : 'VISIBLE') + '</span></td></tr>';
+    }).join('') || '<tr><td colspan="4" class="empty">Sin apps</td></tr>';
+
+    $('#tblU').innerHTML = S.usuarios.map(function (u) {
+      var est = !u.activo ? '<span class="badge">BLOQUEADO</span>'
+        : u.codigo ? '<span class="badge wa">' + (u.cuenta_activada ? 'CÓDIGO NUEVO' : 'PENDIENTE') + '</span>'
+        : '<span class="badge si">ACTIVA</span>';
+      return '<tr data-user="' + esc(u.email) + '"><td><b>' + esc(u.nombre || u.email.split('@')[0]) + '</b><small>' + esc(u.email) + '</small></td>' +
+        '<td>' + (u.rol === 'admin' ? '<span class="badge ad">ADMIN</span>' : '<span class="badge">USUARIO</span>') + '</td><td>' + est + '</td></tr>';
+    }).join('') || '<tr><td colspan="3" class="empty">Sin personas</td></tr>';
+  }
+
+  $('#navAppTx').textContent = S.actual ? sigla(S.actual.nombre) + ' · abierta' : 'App abierta';
+  $('#navApp').style.opacity = S.actual ? '1' : '.45';
+  ir(S.view);
+}
+
+/* ===== Visor ===== */
+function abrir(id) {
+  var a = S.apps.filter(function (x) { return x.id === id; })[0];
+  if (!a) return;
+  if (!a.url) { if (esAdmin()) editarApp(a.id); else toast('Esta app todavía no tiene enlace', true); return; }
+  var cambia = !S.actual || S.actual.id !== a.id;
+  S.actual = a;
+  $('#vTitulo').textContent = a.nombre;
+  $('#bNueva').href = a.url;
+  $('#bPlanilla').style.display = a.planilla_url ? '' : 'none';
+  if (a.planilla_url) $('#bPlanilla').href = a.planilla_url;
+  if (cambia) cargarFrame();
+  pintar();
+  ir('app');
+}
+var FT = { espera: null, tip: null, cargada: false };
+function cargarFrame() {
+  FT.cargada = false;
+  clearTimeout(FT.espera); clearTimeout(FT.tip);
+  $('#fHelp').classList.remove('on'); $('#fTip').classList.remove('on');
+  $('#fHelpNueva').href = $('#fTipNueva').href = S.actual.url;
+  $('#fLoad').style.display = 'grid';
+  $('#frame').src = S.actual.url;
+  FT.espera = setTimeout(function () { if (!FT.cargada) { $('#fLoad').style.display = 'none'; $('#fHelp').classList.add('on'); } }, 15000);
+}
+$('#frame').addEventListener('load', function () {
+  if (!$('#frame').getAttribute('src')) return;
+  FT.cargada = true;
+  clearTimeout(FT.espera);
+  $('#fLoad').style.display = 'none';
+  $('#fHelp').classList.remove('on');
+  $('#fTip').classList.add('on');
+  FT.tip = setTimeout(function () { $('#fTip').classList.remove('on'); }, 9000);
+});
+$('#fHelpReint').addEventListener('click', function () { if (S.actual) cargarFrame(); });
+$('#fTipX').addEventListener('click', function () { clearTimeout(FT.tip); $('#fTip').classList.remove('on'); });
+$('#bVolver').addEventListener('click', function () { ir('inicio'); });
+$('#bRecargar').addEventListener('click', function () { if (S.actual) cargarFrame(); });
+
+/* ===== Paneles ===== */
+function abrirPanel(id) { $('#scrim').classList.add('on'); $(id).classList.add('on'); }
+function cerrar() { $('#scrim').classList.remove('on'); $$('.panel').forEach(function (p) { p.classList.remove('on'); }); }
+$$('[data-cerrar]').forEach(function (b) { b.addEventListener('click', cerrar); });
+$('#scrim').addEventListener('click', cerrar);
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') cerrar(); });
+function ocupado(btns, on, txt) { btns.forEach(function (s) { $(s).disabled = on; }); if (txt) $(btns[btns.length - 1]).textContent = on ? 'Guardando…' : txt; }
+
+/* Apps (administrador) */
+function editarApp(id) {
+  var a = S.apps.filter(function (x) { return x.id === id; })[0] || { id: '', nombre: '', url: '', area: '', descripcion: '', planilla_url: '', orden: S.apps.length + 1, activo: 'SI' };
+  $('#pTitulo').textContent = a.id ? 'Editar app' : 'Agregar app';
+  $('#fId').value = a.id; $('#fNombre').value = a.nombre; $('#fUrl').value = a.url; $('#fArea').value = a.area;
+  $('#fDesc').value = a.descripcion; $('#fPlanilla').value = a.planilla_url; $('#fOrden').value = a.orden; $('#fActivo').value = a.activo;
+  $('#pEliminar').style.display = a.id ? '' : 'none';
+  abrirPanel('#pApp');
+}
+function siguienteId() {
+  var n = S.apps.reduce(function (m, a) { var k = parseInt(String(a.id).replace(/\D/g, ''), 10); return isNaN(k) ? m : Math.max(m, k); }, 0) + 1;
+  return 'AP-' + (n < 10 ? '0' : '') + n;
+}
+$('#pGuardar').addEventListener('click', function () {
+  var o = { nombre: $('#fNombre').value.trim(), url: $('#fUrl').value.trim(), area: $('#fArea').value.trim(), descripcion: $('#fDesc').value.trim(),
+    planilla_url: $('#fPlanilla').value.trim(), orden: parseInt($('#fOrden').value, 10) || (S.apps.length + 1), activo: $('#fActivo').value !== 'NO' };
+  if (!o.nombre) { toast('Falta el nombre de la app', true); return; }
+  if (o.url && !/^https:\/\//i.test(o.url)) { toast('El enlace debe partir con https://', true); return; }
+  ['area', 'descripcion', 'url', 'planilla_url'].forEach(function (k) { if (!o[k]) o[k] = null; });
+  var id = $('#fId').value;
+  o.updated_at = new Date().toISOString();
+  ocupado(['#pEliminar', '#pGuardar'], true, 'Guardar');
+  var q = id ? sb.from('portal_apps').update(o).eq('id', id).select() : sb.from('portal_apps').insert(Object.assign({ id: siguienteId() }, o)).select();
+  q.then(function (r) { if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error('No tienes permiso para hacer esto.'); return recargar(); })
+    .then(function () { cerrar(); toast('App guardada'); })
+    .catch(function (e) { toast(msgErr(e), true); })
+    .then(function () { ocupado(['#pEliminar', '#pGuardar'], false, 'Guardar'); });
+});
+$('#pEliminar').addEventListener('click', function () {
+  var id = $('#fId').value; if (!id) return;
+  if (!confirm('¿Quitar "' + $('#fNombre').value + '" de MSMIN? La app en sí no se borra, solo deja de aparecer aquí. Si solo quieres esconderla, usa Visible: No.')) return;
+  ocupado(['#pEliminar', '#pGuardar'], true, 'Guardar');
+  sb.from('portal_apps').delete().eq('id', id).then(function (r) {
+    if (r.error) throw r.error;
+    if (S.actual && S.actual.id === id) { S.actual = null; $('#frame').removeAttribute('src'); }
+    return recargar();
+  }).then(function () { cerrar(); toast('App quitada'); })
+    .catch(function (e) { toast(msgErr(e), true); })
+    .then(function () { ocupado(['#pEliminar', '#pGuardar'], false, 'Guardar'); });
+});
+$('#bNuevaApp').addEventListener('click', function () { editarApp(''); });
+
+/* Equipo (administrador) */
+var UE = null; // persona en edición
+function pintarCodigo(u) {
+  var con = u && u.codigo && u.activo;
+  $('#uCodeBox').hidden = !con;
+  if (con) {
+    $('#uCode').textContent = u.codigo;
+    $('#uCodeLbl').textContent = u.cuenta_activada ? 'Código para cambiar la contraseña' : 'Código de invitación (aún no activa su cuenta)';
+  }
+  $('#uNuevoCodigo').hidden = !(u && u.activo && u.email !== S.email);
+  $('#uNuevoCodigo').textContent = u && u.codigo ? 'Generar otro código' : 'Generar código nuevo (olvidó la contraseña)';
+}
+function editarUser(email) {
+  UE = S.usuarios.filter(function (x) { return x.email === email; })[0] || null;
+  $('#uTitulo').textContent = UE ? (UE.nombre || UE.email) : 'Agregar persona';
+  $('#uEmail').value = UE ? UE.email : ''; $('#uEmail').disabled = !!UE;
+  $('#uEmailNota').textContent = UE ? 'El correo no se puede cambiar; si cambió, quita a la persona y agrégala de nuevo.' : 'Con este correo entrará a la app.';
+  $('#uNombre').value = UE ? (UE.nombre || '') : '';
+  $('#uRol').value = UE ? UE.rol : 'usuario';
+  $('#uActivo').value = !UE || UE.activo ? 'SI' : 'NO';
+  var yo = UE && UE.email === S.email;
+  $('#uRol').disabled = yo; $('#uActivo').disabled = yo;
+  $('#uEliminar').style.display = UE && !yo ? '' : 'none';
+  $('#uGuardar').textContent = UE ? 'Guardar' : 'Agregar y crear código';
+  pintarCodigo(UE);
+  abrirPanel('#pUser');
+}
+function guardarUser(cambios, msg) {
+  ocupado(['#uEliminar', '#uNuevoCodigo', '#uGuardar'], true);
+  var q = UE ? sb.from('portal_usuarios').update(cambios).eq('email', UE.email).select()
+             : sb.from('portal_usuarios').insert(cambios).select();
+  return q.then(function (r) {
+    if (r.error) throw r.error;
+    if (!r.data || !r.data.length) throw new Error('No tienes permiso para hacer esto.');
+    UE = r.data[0];
+    return cargar();
+  }).then(function () { pintar(); editarUser(UE.email); toast(msg); })
+    .catch(function (e) { toast(msgErr(e), true); })
+    .then(function () { ocupado(['#uEliminar', '#uNuevoCodigo', '#uGuardar'], false); $('#uGuardar').textContent = UE ? 'Guardar' : 'Agregar y crear código'; });
+}
+$('#uGuardar').addEventListener('click', function () {
+  var c = { nombre: $('#uNombre').value.trim() || null, rol: $('#uRol').value, activo: $('#uActivo').value === 'SI', updated_at: new Date().toISOString() };
+  if (!UE) {
+    var em = $('#uEmail').value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast('Revisa el correo', true); return; }
+    c.email = em; c.codigo = codigoNuevo();
+    guardarUser(c, 'Persona agregada. Envíale su código.');
+  } else {
+    if (UE.email === S.email) { delete c.rol; delete c.activo; }
+    guardarUser(c, 'Cambios guardados');
+  }
+});
+$('#uNuevoCodigo').addEventListener('click', function () {
+  if (!UE) return;
+  if (UE.cuenta_activada && !confirm('Se generará un código para que ' + (UE.nombre || UE.email) + ' ponga una contraseña nueva. Su contraseña actual sigue funcionando hasta que use el código. ¿Continuar?')) return;
+  guardarUser({ codigo: codigoNuevo(), intentos: 0, updated_at: new Date().toISOString() }, 'Código nuevo generado');
+});
+$('#uEliminar').addEventListener('click', function () {
+  if (!UE || UE.email === S.email) return;
+  if (!confirm('¿Quitar a ' + (UE.nombre || UE.email) + ' del equipo? Ya no podrá entrar a la app.')) return;
+  ocupado(['#uEliminar', '#uNuevoCodigo', '#uGuardar'], true);
+  sb.from('portal_usuarios').delete().eq('email', UE.email).then(function (r) { if (r.error) throw r.error; return cargar(); })
+    .then(function () { pintar(); cerrar(); toast('Persona quitada del equipo'); })
+    .catch(function (e) { toast(msgErr(e), true); })
+    .then(function () { ocupado(['#uEliminar', '#uNuevoCodigo', '#uGuardar'], false); });
+});
+function textoInvitacion() {
+  var url = location.origin + location.pathname;
+  return 'Hola' + (UE && UE.nombre ? ' ' + UE.nombre.split(' ')[0] : '') + ', te di acceso a la app Estructural MSMIN.\n\n' +
+    '1. Abre ' + url + '\n2. Toca "Activar cuenta"\n3. Correo: ' + UE.email + '\n4. Código: ' + UE.codigo + '\n5. Elige tu contraseña.\n\n' +
+    'Después instálala en el teléfono: en Android, menú ⋮ > Instalar app; en iPhone, Compartir > Agregar a inicio.';
+}
+$('#uCompartir').addEventListener('click', function () {
+  if (!UE || !UE.codigo) return;
+  var t = textoInvitacion();
+  if (navigator.share) navigator.share({ title: 'Acceso a Estructural MSMIN', text: t }).catch(function () {});
+  else copiar(t, 'Invitación copiada. Pégala en WhatsApp o correo.');
+});
+$('#uCopiar').addEventListener('click', function () { if (UE && UE.codigo) copiar(textoInvitacion(), 'Invitación copiada'); });
+function copiar(t, msg) {
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast(msg); })
+    .catch(function () { prompt('Copia este texto:', t); });
+}
+$('#bNuevoUser').addEventListener('click', function () { editarUser(''); });
+
+/* Contraseña */
+$('#bClave').addEventListener('click', function () { $('#kPass').value = $('#kPass2').value = ''; abrirPanel('#pClave'); });
+$('#kGuardar').addEventListener('click', function () {
+  var p1 = $('#kPass').value, p2 = $('#kPass2').value;
+  if (p1.length < 8) { toast('Mínimo 8 caracteres', true); return; }
+  if (p1 !== p2) { toast('Las contraseñas no coinciden', true); return; }
+  $('#kGuardar').disabled = true;
+  sb.auth.updateUser({ password: p1 }).then(function (r) { if (r.error) throw r.error; cerrar(); toast('Contraseña cambiada'); })
+    .catch(function (e) { toast(msgErr(e), true); })
+    .then(function () { $('#kGuardar').disabled = false; });
+});
+
+/* Navegación */
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-go],[data-app],[data-edit],[data-user]');
+  if (!t) return;
+  if (t.hasAttribute('data-app')) abrir(t.dataset.app);
+  else if (t.hasAttribute('data-edit')) { if (esAdmin()) editarApp(t.dataset.edit); }
+  else if (t.hasAttribute('data-user')) { if (esAdmin()) editarUser(t.dataset.user); }
+  else if (t.dataset.go) { ir(t.dataset.go); if (t.dataset.go === 'inicio' && !S.offline) recargar(); }
+});
+
+/* ===== Instalación ===== */
+var promptInstalar = null;
+var instalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+function notaInstalar() {
+  $('#bInstalar').hidden = !promptInstalar || instalada;
+  $('#instNota').textContent = instalada ? 'App instalada en este teléfono.'
+    : promptInstalar ? ''
+    : ios ? 'Para instalarla: en Safari toca Compartir y luego "Agregar a inicio".'
+    : 'Para instalarla: en Chrome abre el menú ⋮ y toca "Instalar app" o "Agregar a la pantalla principal".';
+}
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); promptInstalar = e; notaInstalar(); });
+window.addEventListener('appinstalled', function () { instalada = true; promptInstalar = null; notaInstalar(); toast('App instalada'); });
+$('#bInstalar').addEventListener('click', function () {
+  if (!promptInstalar) return;
+  promptInstalar.prompt();
+  promptInstalar.userChoice.then(function () { promptInstalar = null; notaInstalar(); });
+});
+notaInstalar();
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+window.addEventListener('online', function () { if (S.offline) entrar().catch(function () {}); });
+
+/* ===== Inicio ===== */
+sb.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT' && !$('#shell').hidden) mostrarGate(false); });
+entrar().catch(function (e) { mostrarGate(false); gMsg(msgErr(e)); });
+</script>
+</body>
+</html>
