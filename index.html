@@ -35,6 +35,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top{height:var(--top);padding:var(--sat) 14px 0;background:var(--slate);border-bottom:1px solid var(--line);color:#fff;display:flex;align-items:center;gap:12px;position:relative;z-index:5}
 .mark{width:34px;height:34px;border-radius:9px;background:var(--amber);display:grid;place-items:center;flex:none}
 .mark svg{width:20px;height:20px;color:#07111D}
+.logo-chip{background:#fff;border-radius:9px;padding:4px 6px;flex:none;display:grid;place-items:center;height:42px}
+.logo-chip img{display:block;height:34px;width:auto}
+.logo-card{background:#fff;border-radius:16px;padding:14px 18px;margin-bottom:16px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.logo-card img{display:block;width:210px;max-width:60vw;height:auto}
 .ttl{min-width:0;flex:1}
 .ttl h1{margin:0;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttl small{display:block;color:var(--ink3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -199,7 +203,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-o
 <!-- ============ ACCESO ============ -->
 <section class="gate" id="gate" hidden>
   <div class="brand">
-    <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+    <div class="logo-card"><img src="icons/logo.png" alt="msmin by SGS" width="210" height="93"></div>
     <h1>Estructural MSMIN</h1>
     <p>Ingeniería de mantenimiento · Contrato 4600030865</p>
   </div>
@@ -240,7 +244,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-o
 
 <!-- ============ APP ============ -->
 <header class="top" id="top" hidden>
-  <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+  <div class="logo-chip"><img src="icons/logo.png" alt="msmin by SGS" width="79" height="35"></div>
   <div class="ttl"><h1>Estructural MSMIN</h1><small>Ingeniería de mantenimiento · Contrato 4600030865</small></div>
   <button class="user" id="tUser" data-go="ajustes"></button>
   <span class="offline" id="offline" hidden>Sin conexión · lista guardada</span>
