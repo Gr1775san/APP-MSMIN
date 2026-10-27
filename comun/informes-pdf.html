@@ -1,0 +1,238 @@
+
+<!-- MSMIN: Informes PDF de inspección (igual en todas las apps). La app llama msminInformes({...}) con su adaptador. -->
+<style>
+.msmin-inf{display:inline-flex;align-items:center;gap:6px;flex:none;height:38px;padding:0 13px 0 10px;margin-right:4px;border-radius:999px;border:1px solid rgba(111,176,230,.55);background:rgba(111,176,230,.14);color:#BFDDF6;font:600 13.5px/1 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.msmin-inf:hover{background:rgba(111,176,230,.26)}
+.msmin-inf:focus-visible{outline:2px solid #6FB0E6;outline-offset:2px}
+.msmin-inf svg{width:18px;height:18px;flex:none}
+.msmin-inf.flota{position:fixed;top:calc(env(safe-area-inset-top) + 10px);right:10px;z-index:9999;background:#12253B;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+@media (max-width:560px){.msmin-inf{padding:0 10px}.msmin-inf .tx{display:none}}
+.mi-fondo{position:fixed;inset:0;z-index:10000;background:rgba(2,8,15,.7);display:none}
+.mi-fondo.on{display:block}
+.mi-panel{position:fixed;z-index:10001;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 20px));max-height:calc(100vh - 30px);display:none;flex-direction:column;background:#0F2033;color:#E9EFF5;border:1px solid #244260;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5);font:14.5px/1.45 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.mi-panel.on{display:flex}
+.mi-hd{display:flex;align-items:center;gap:10px;padding:14px 14px 10px 18px;border-bottom:1px solid #244260}
+.mi-hd h3{margin:0;flex:1;font:700 17px/1.2 "IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif}
+.mi-x{width:40px;height:40px;border:0;border-radius:10px;background:none;color:#E9EFF5;font-size:20px;cursor:pointer}
+.mi-x:hover{background:#183049}
+.mi-bd{padding:14px 18px 18px;overflow:auto;-webkit-overflow-scrolling:touch}
+.mi-ult{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:12px;border:1px solid rgba(232,163,23,.6);background:rgba(232,163,23,.12);color:#E9EFF5;cursor:pointer;font:inherit}
+.mi-ult:hover{background:rgba(232,163,23,.2)}
+.mi-ult svg{width:30px;height:30px;flex:none;color:#E8A317}
+.mi-ult b{display:block;font-size:15.5px}
+.mi-ult small{display:block;color:#B4C3D2;font-size:12.5px;margin-top:2px}
+.mi-bus{position:relative;margin:16px 0 8px}
+.mi-bus input{width:100%;box-sizing:border-box;padding:11px 12px 11px 38px;border:1px solid #244260;border-radius:10px;background:#183049;color:#E9EFF5;font:inherit;font-size:16px}
+.mi-bus input:focus{outline:2px solid #E8A317;border-color:#E8A317}
+.mi-bus svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;color:#8399AE}
+.mi-cnt{font-size:12.5px;color:#8399AE;margin:0 0 6px}
+.mi-li{list-style:none;margin:0;padding:0}
+.mi-li li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1D3753}
+.mi-li li:last-child{border:0}
+.mi-li .t{flex:1;min-width:0}
+.mi-li .t b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi-li .t small{display:block;color:#8399AE;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mi-btn{flex:none;border:1px solid #2A6CB0;background:#2A6CB0;color:#fff;border-radius:9px;padding:8px 12px;font:600 13px/1 "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;min-height:36px;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+.mi-btn:disabled{opacity:.6;cursor:wait}
+.mi-btn.ok{background:#1E6B2D;border-color:#1E6B2D}
+.mi-est{font-size:13px;color:#B4C3D2;margin-top:10px;min-height:18px}
+.mi-est.err{color:#F08A80}
+.mi-vacio{color:#8399AE;text-align:center;padding:26px 6px}
+</style>
+<div class="mi-fondo" id="miFondo"></div>
+<section class="mi-panel" id="miPanel" role="dialog" aria-modal="true" aria-labelledby="miTit">
+  <div class="mi-hd"><h3 id="miTit">Informes PDF de inspección</h3><button class="mi-x" id="miX" aria-label="Cerrar">✕</button></div>
+  <div class="mi-bd">
+    <button class="mi-ult" id="miUlt" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/></svg>
+      <span><b id="miUltT">Descargar la última inspección</b><small id="miUltS"></small></span>
+    </button>
+    <div class="mi-est" id="miEst" role="status"></div>
+    <div class="mi-bus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="miQ" type="search" placeholder="Buscar inspecciones anteriores: semana, fecha, equipo o texto…" autocomplete="off"></div>
+    <p class="mi-cnt" id="miCnt"></p>
+    <ul class="mi-li" id="miLi"></ul>
+  </div>
+</section>
+<script>
+(function () {
+  var A = null, LISTA = [], LOGO = '', ocupado = false;
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function sinTilde(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function fechaTxt(f) { var m = String(f || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '-' + m[2] + '-' + m[1] : String(f || ''); }
+  function ahora() { var d = new Date(), p = function (n) { return ('0' + n).slice(-2); }; return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+
+  /* ---------- Piezas para armar el informe (las usa cada app) ---------- */
+  var H = {
+    esc: esc, fecha: fechaTxt, txt: function (s) { return esc(s).replace(/\r?\n/g, '<br>'); },
+    /** cols: [[titulo, fn(fila) -> html, ancho?]] */
+    tabla: function (cols, filas, vacio) {
+      if (!filas || !filas.length) return '<p class="nada">' + esc(vacio || 'Sin registros.') + '</p>';
+      return '<table class="t"><thead><tr>' + cols.map(function (c) { return '<th' + (c[2] ? ' style="width:' + c[2] + '"' : '') + '>' + esc(c[0]) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        filas.map(function (f, i) { return '<tr' + (i % 2 ? ' class="b"' : '') + '>' + cols.map(function (c) { return '<td>' + c[1](f) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+    },
+    /** pares: [[etiqueta, valor]] en 2 columnas */
+    ficha: function (pares) {
+      var p = pares.filter(function (x) { return x[1] !== '' && x[1] != null; }), h = '<table class="fi">';
+      for (var i = 0; i < p.length; i += 2) h += '<tr><th>' + esc(p[i][0]) + '</th><td>' + esc(p[i][1]) + '</td>' + (p[i + 1] ? '<th>' + esc(p[i + 1][0]) + '</th><td>' + esc(p[i + 1][1]) + '</td>' : '<th></th><td></td>') + '</tr>';
+      return h + '</table>';
+    },
+    /** kpis: [[valor, etiqueta, 'crit'|'amb'|'ok'|'']] */
+    kpis: function (k) {
+      return '<table class="kp"><tr>' + k.map(function (x) { return '<td><b class="' + (x[2] || '') + '">' + esc(x[0]) + '</b>' + esc(x[1]) + '</td>'; }).join('') + '</tr></table>';
+    },
+    /** Nivel de criticidad/categoría -> clase de color */
+    nivel: function (v) {
+      var t = sinTilde(v);
+      if (/no ejecutad|crit|alarma|urgente/.test(t) || (/\balt[oa]\b/.test(t) && !/medi/.test(t))) return 'crit';
+      if (/medi|pendiente|seguimiento/.test(t)) return 'amb';
+      if (/baj|normal|cerrad|ejecutad|ok/.test(t)) return 'ok';
+      return '';
+    },
+    sello: function (v) { return v ? '<span class="s ' + H.nivel(v) + '">' + esc(v) + '</span>' : ''; },
+    /** Fotos de Drive: el servidor las reemplaza por la imagen (solo apps con fotos) */
+    fotos: function (grupos) {
+      var g = grupos.filter(function (x) { return x.ids && x.ids.length; });
+      if (!g.length) return '';
+      var celdas = [];
+      g.forEach(function (x) { x.ids.slice(0, 4).forEach(function (id, i) { celdas.push('<td><img src="drive:' + esc(id) + '" style="width:235pt"><div class="pf">' + esc(x.titulo) + (x.ids.length > 1 ? ' · foto ' + (i + 1) : '') + '</div></td>'); }); });
+      var h = '<table class="fo">';
+      for (var i = 0; i < celdas.length; i += 2) h += '<tr>' + celdas[i] + (celdas[i + 1] || '<td></td>') + '</tr>';
+      return h + '</table>';
+    },
+    /** SVG (texto) -> PNG (data URL) para incluir gráficos y planos en el PDF */
+    svgPng: function (svg, ancho, alto) {
+      return new Promise(function (ok) {
+        try {
+          var img = new Image();
+          img.onload = function () {
+            var c = document.createElement('canvas'); c.width = ancho; c.height = alto;
+            var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ancho, alto); x.drawImage(img, 0, 0, ancho, alto);
+            try { ok(c.toDataURL('image/png')); } catch (e) { ok(''); }
+          };
+          img.onerror = function () { ok(''); };
+          var s = String(svg);
+          if (!/xmlns=/.test(s)) s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+          s = s.replace(/<svg([^>]*?)>/, function (m, a) { return '<svg' + a.replace(/\s(width|height)="[^"]*"/g, '') + ' width="' + ancho + '" height="' + alto + '">'; });
+          img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+        } catch (e) { ok(''); }
+      });
+    }
+  };
+
+  var CSS_PDF =
+    'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#17232B;margin:0}' +
+    '.cab{width:100%;border-collapse:collapse;border-bottom:2.5pt solid #E8A317;margin-bottom:8pt}.cab td{vertical-align:middle;padding:0 0 6pt}' +
+    'h1{font-size:15pt;margin:0;color:#1F3A4D}.sub{font-size:9.5pt;color:#4A5A66;margin-top:2pt}.der{text-align:right;font-size:8.5pt;color:#4A5A66}' +
+    'h2{font-size:11pt;color:#FFFFFF;background:#1F3A4D;padding:4pt 7pt;margin:14pt 0 6pt}' +
+    'h3{font-size:10.5pt;color:#1F3A4D;margin:10pt 0 4pt;border-bottom:1pt solid #C9D3DA;padding-bottom:2pt}' +
+    'table.t{width:100%;border-collapse:collapse;table-layout:fixed;margin:2pt 0 8pt}.t th{background:#E8EEF2;color:#1F3A4D;font-size:8pt;text-align:left;padding:3pt 4pt;border:0.5pt solid #C9D3DA}' +
+    '.t td{font-size:8pt;padding:3pt 4pt;border:0.5pt solid #C9D3DA;vertical-align:top}.t tr.b td{background:#F6F8FA}' +
+    'table.fi{width:100%;border-collapse:collapse;margin:0 0 8pt}.fi th{text-align:left;font-size:8pt;color:#6B7A83;font-weight:normal;padding:2.5pt 6pt 2.5pt 0;width:17%;vertical-align:top}.fi td{font-size:9pt;font-weight:bold;padding:2.5pt 10pt 2.5pt 0;width:33%;vertical-align:top}' +
+    'table.kp{width:100%;border-collapse:separate;border-spacing:4pt;margin:2pt 0 6pt}.kp td{border:0.5pt solid #C9D3DA;border-top:2.5pt solid #2B4F66;text-align:center;padding:5pt 3pt;font-size:8pt;color:#4A5A66;background:#FFFFFF}.kp b{display:block;font-size:16pt;color:#1F3A4D;margin-bottom:1pt}' +
+    '.kp b.crit,.crit{color:#B3261E}.kp b.amb{color:#9A6100}.kp b.ok{color:#1E6B2D}' +
+    '.s{font-weight:bold;padding:1pt 3pt}.s.crit{background:#F8D7DA;color:#8A1C24}.s.amb{background:#FFF1D6;color:#7A5200}.s.ok{background:#DFF2E1;color:#1E6B2D}' +
+    'table.fo{width:100%;border-collapse:collapse}.fo td{width:50%;vertical-align:top;padding:4pt;text-align:center}.pf{font-size:7.5pt;color:#4A5A66;margin-top:2pt}' +
+    '.nada{color:#6B7A83;font-style:italic;margin:2pt 0 8pt}.nota{font-size:8pt;color:#6B7A83}.img{text-align:center;margin:4pt 0 8pt}' +
+    '.pie{margin-top:16pt;font-size:7.5pt;color:#6B7A83;border-top:0.5pt solid #C9D3DA;padding-top:4pt}';
+
+  function documento(r) {
+    var logo = r.logo || A.logo || LOGO;
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(r.titulo) + '</title><style>' + CSS_PDF + '</style></head><body>' +
+      '<table class="cab"><tr>' + (logo ? '<td style="width:118pt"><img src="' + logo + '" style="height:42pt"></td>' : '') +
+      '<td><h1>' + esc(r.titulo) + '</h1><div class="sub">' + esc(r.sub || '') + '</div></td>' +
+      '<td class="der">' + esc(A.app || '') + '<br>Contrato 4600030865<br>División Chuquicamata</td></tr></table>' +
+      r.cuerpo +
+      '<div class="pie">Informe generado el ' + esc(ahora()) + (A.autor && A.autor() ? ' por ' + esc(A.autor()) : '') + ' desde la app MSMIN · Ingeniería de mantenimiento</div>' +
+      '</body></html>';
+  }
+
+  /* ---------- Descarga ---------- */
+  function estado(t, err) { var e = $('miEst'); e.textContent = t || ''; e.className = 'mi-est' + (err ? ' err' : ''); }
+  function bajar(res, boton) {
+    var bin = atob(res.b64), n = bin.length, u = new Uint8Array(n);
+    for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u], { type: 'application/pdf' }));
+    var a = document.createElement('a'); a.href = url; a.download = res.nombre; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    estado('Listo: ' + res.nombre + ' (' + Math.max(1, Math.round(n / 1024)) + ' KB). Si no se descargó, toca «Guardar PDF».');
+    if (boton) {
+      var g = document.createElement('a'); g.className = 'mi-btn ok'; g.href = url; g.download = res.nombre; g.textContent = '⬇ Guardar PDF';
+      boton.replaceWith(g);
+    }
+  }
+  function generar(clave, boton) {
+    if (ocupado) return;
+    var it = LISTA.filter(function (x) { return x.clave === clave; })[0];
+    if (!it) return;
+    ocupado = true;
+    var txt = boton ? boton.textContent : '';
+    if (boton) { boton.disabled = true; boton.textContent = 'Generando…'; }
+    estado('Generando el PDF de ' + it.titulo + '…');
+    var fin = function () { ocupado = false; if (boton && boton.isConnected) { boton.disabled = false; boton.textContent = txt; } };
+    Promise.resolve().then(function () { return A.informe(clave, H); }).then(function (r) {
+      if (!window.google || !google.script || !google.script.run) throw new Error('Abre la app desde su enlace para generar el PDF.');
+      google.script.run
+        .withSuccessHandler(function (res) { fin(); bajar(res, boton && boton.isConnected ? boton : null); })
+        .withFailureHandler(function (e) { fin(); estado('No se pudo generar el PDF: ' + (e && e.message || e), true); })
+        .msminInformePdf(documento(r), r.archivo || r.titulo);
+    }).catch(function (e) { fin(); estado('No se pudo armar el informe: ' + (e && e.message || e), true); });
+  }
+
+  /* ---------- Panel ---------- */
+  function pintarLista() {
+    var q = sinTilde($('miQ').value).trim(), palabras = q ? q.split(/\s+/) : [];
+    var f = LISTA.filter(function (x) { var t = x._b || (x._b = sinTilde([x.titulo, x.sub, x.buscar].join(' '))); return palabras.every(function (p) { return t.indexOf(p) >= 0; }); });
+    $('miCnt').textContent = LISTA.length ? (q ? f.length + ' de ' + LISTA.length + ' inspecciones' : LISTA.length + (LISTA.length === 1 ? ' inspección registrada' : ' inspecciones registradas')) : '';
+    $('miLi').innerHTML = f.slice(0, 120).map(function (x, i) {
+      return '<li><div class="t"><b>' + esc(x.titulo) + (x === LISTA[0] ? ' · última' : '') + '</b><small>' + esc(x.sub || '') + '</small></div>' +
+        '<button class="mi-btn" type="button" data-k="' + esc(x.clave) + '">⬇ PDF</button></li>';
+    }).join('') || '<li class="mi-vacio">' + (LISTA.length ? 'No hay inspecciones que coincidan con la búsqueda.' : 'Todavía no hay inspecciones registradas.') + '</li>';
+  }
+  function abrir() {
+    try { LISTA = A.lista(H) || []; } catch (e) { LISTA = []; estado('No se pudo leer la lista: ' + e.message, true); }
+    var u = LISTA[0];
+    $('miUlt').style.display = u ? '' : 'none';
+    if (u) { $('miUltT').textContent = 'Descargar PDF · ' + u.titulo; $('miUltS').textContent = u.sub || ''; }
+    $('miQ').value = ''; if (!ocupado) estado('');
+    pintarLista();
+    $('miFondo').classList.add('on'); $('miPanel').classList.add('on');
+  }
+  function cerrar() { $('miFondo').classList.remove('on'); $('miPanel').classList.remove('on'); }
+
+  function poner() {
+    if (document.querySelector('.msmin-inf')) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'msmin-inf'; b.title = 'Descargar informes PDF de inspección'; b.setAttribute('aria-label', 'Informes PDF de inspección');
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/></svg><span class="tx">Informes PDF</span>';
+    b.addEventListener('click', abrir);
+    var donde = A.boton ? document.querySelector(A.boton) : null;
+    if (donde) donde.parentNode.insertBefore(b, donde);
+    else {
+      var v = document.querySelector('.msmin-volver');
+      if (v && v.parentNode) v.parentNode.insertBefore(b, v.nextSibling);
+      else { b.classList.add('flota'); document.body.appendChild(b); }
+    }
+    $('miX').onclick = cerrar; $('miFondo').onclick = cerrar;
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('miPanel').classList.contains('on')) cerrar(); });
+    $('miQ').oninput = pintarLista;
+    $('miUlt').onclick = function () { if (LISTA[0]) generar(LISTA[0].clave, null); };
+    $('miLi').onclick = function (e) { var t = e.target.closest('button[data-k]'); if (t) generar(t.getAttribute('data-k'), t); };
+    if (!A.logo) cargarLogo();
+  }
+  function cargarLogo() {
+    try {
+      fetch('https://gr1775san.github.io/APP-MSMIN/icons/logo.png').then(function (r) { return r.ok ? r.blob() : null; }).then(function (b) {
+        if (!b) return; var f = new FileReader(); f.onload = function () { LOGO = String(f.result || ''); }; f.readAsDataURL(b);
+      }).catch(function () { });
+    } catch (e) { }
+  }
+
+  /** adaptador: { app, logo?, boton?, autor(), lista(H) -> [{clave,titulo,sub,buscar}] (más reciente primero), informe(clave,H) -> {titulo,sub,archivo,cuerpo} | Promise } */
+  window.msminInformes = function (adaptador) {
+    A = adaptador;
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
+  };
+})();
+</script>

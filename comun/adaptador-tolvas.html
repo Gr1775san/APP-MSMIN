@@ -1,0 +1,87 @@
+
+<script>
+/* MSMIN · Informes PDF de Inspección Tolvas. Una inspección = un informe (hoja informes). */
+(function () {
+  var HEX = { 'var(--crit)': '#D64541', 'var(--amber)': '#E8A317', 'var(--ok)': '#3BA55C' };
+  function delInf(lista, id) { return (lista || []).filter(function (r) { return String(r.informe_id) === String(id); }); }
+  function infs() { return D.informes.slice().sort(function (a, b) { return String(b.fecha_informe).localeCompare(String(a.fecha_informe)) || String(b.id).localeCompare(String(a.id)); }); }
+  function lista() {
+    return infs().map(function (i) {
+      var hz = delInf(D.hallazgos, i.id), av = delInf(D.avisos, i.id), sev70 = hz.filter(function (h) { return frac(h.porcentaje_rotura) >= 0.7; }).length;
+      return {
+        clave: String(i.id), titulo: (i.semana || i.id) + ' · ' + fecha(i.fecha_informe),
+        sub: hz.length + (hz.length === 1 ? ' rotura' : ' roturas') + (sev70 ? ' (' + sev70 + ' de 70% o más)' : '') + ' · ' + av.length + (av.length === 1 ? ' aviso' : ' avisos'),
+        buscar: [i.id, i.semana, fecha(i.fecha_informe), i.titulo, i.gerencia].join(' ') + ' ' + hz.concat(av).map(function (r) { return [r.equipo, r.tag, r.cuadrante, r.tipo_hallazgo, r.descripcion, r.modo_falla, r.n_aviso].join(' '); }).join(' ')
+      };
+    });
+  }
+  function svgPrint(marcas) {
+    var s = buzonSVG(marcas);
+    Object.keys(HEX).forEach(function (k) { s = s.split(k).join(HEX[k]); });
+    return s.replace(/currentColor/g, '#1F3A4D').replace(/rgba\(111,176,230,\.05\)/g, '#F4F7FA').replace(/#244260/g, '#9FB2C2');
+  }
+  function planos(H, suyos) {
+    var ids = {}; bzSectores().forEach(function (o) { ids[o.id] = 1; });
+    return Promise.all(['Norte', 'Sur'].map(function (l) {
+      var marcas = {}, fuera = [];
+      suyos.filter(function (h) { return h.lado === l; }).forEach(function (h) {
+        var id = bzId(h.cuadrante), p = frac(h.porcentaje_rotura);
+        if (!ids[id]) { fuera.push(h.cuadrante); return; }
+        if (!marcas.hasOwnProperty(id) || p > marcas[id]) marcas[id] = p;
+      });
+      return H.svgPng(svgPrint(marcas), 380, 756).then(function (png) { return { l: l, png: png, fuera: fuera, n: Object.keys(marcas).length }; });
+    })).then(function (lados) {
+      if (!lados.some(function (x) { return x.png; })) return '';
+      return '<table class="fo"><tr>' + lados.map(function (x) {
+        return '<td>' + (x.png ? '<img src="' + x.png + '" style="width:150pt">' : '') + '<div class="pf"><b>Lado ' + x.l + '</b>' + (x.fuera.length ? ' · fuera del plano: ' + H.esc(x.fuera.join(', ')) : '') + '</div></td>';
+      }).join('') + '</tr></table><p class="nota" style="text-align:center">Punto por sector con rotura: verde menos de 40% · ámbar 40% a 69% · rojo 70% o más.</p>';
+    });
+  }
+  function informe(id, H) {
+    var inf = D.informes.filter(function (i) { return String(i.id) === String(id); })[0];
+    if (!inf) throw new Error('No se encontró el informe ' + id);
+    var hz = delInf(D.hallazgos, id), av = delInf(D.avisos, id), mx = delInf(D.matriz_riesgo, id);
+    var criticos = av.filter(function (a) { return String(a.categoria).toLowerCase().indexOf('crit') >= 0; }).length;
+    var severos = hz.filter(function (h) { return frac(h.porcentaje_rotura) >= 0.7; }).length;
+    var mayor = hz.slice().sort(function (a, b) { return frac(b.porcentaje_rotura) - frac(a.porcentaje_rotura); })[0];
+    var h = H.ficha([['Informe', inf.id], ['Semana', inf.semana], ['Fecha del informe', fecha(inf.fecha_informe)], ['Área', inf.area || 'Área 200'], ['Gerencia', inf.gerencia || ''], ['Contrato', inf.contrato || '4600030865']]);
+    h += H.kpis([[av.length, 'Avisos SAP', ''], [criticos, 'Avisos críticos', criticos ? 'crit' : 'ok'], [hz.length, 'Roturas registradas', ''],
+      [severos, 'Roturas de 70% o más', severos ? 'crit' : 'ok'], [mayor ? pct(mayor.porcentaje_rotura) : '–', 'Mayor rotura', mayor ? sev(mayor.porcentaje_rotura) : 'ok']]);
+    var resumen = D.equipos.map(function (e) {
+      var s = hz.filter(function (x) { return x.equipo === e.equipo; });
+      var mxE = mx.filter(function (m) { return m.equipo === e.equipo; }).sort(function (a, b) { return rango(b.nivel_riesgo) - rango(a.nivel_riesgo); })[0];
+      var max = s.reduce(function (m, x) { return Math.max(m, frac(x.porcentaje_rotura)); }, 0);
+      return { e: e, n: s.length, max: max, riesgo: mxE ? mxE.nivel_riesgo : '' };
+    });
+    h += '<h2>Resumen por tolva</h2>' + H.tabla([
+      ['Tolva', function (x) { return '<b>' + H.esc(x.e.equipo) + '</b>'; }], ['TAG', function (x) { return H.esc(x.e.tag); }], ['Roturas', function (x) { return String(x.n); }, '50pt'],
+      ['Mayor rotura', function (x) { return x.n ? '<b class="' + sev(x.max) + '">' + Math.round(x.max * 100) + '%</b>' : '—'; }, '64pt'], ['Matriz de riesgo', function (x) { return H.sello(x.riesgo); }]
+    ], resumen);
+    var tolvas = D.equipos.map(function (e) { return { e: e, s: hz.filter(function (x) { return x.equipo === e.equipo; }).sort(function (a, b) { return String(a.lado).localeCompare(String(b.lado)) || frac(b.porcentaje_rotura) - frac(a.porcentaje_rotura); }) }; });
+    return Promise.all(tolvas.map(function (t) { return t.s.length ? planos(H, t.s) : Promise.resolve(''); })).then(function (imgs) {
+      h += '<h2>Hallazgos por tolva</h2>';
+      tolvas.forEach(function (t, i) {
+        h += '<h3>' + H.esc(t.e.equipo) + (t.e.tag ? ' · ' + H.esc(t.e.tag) : '') + '</h3>' + H.tabla([
+          ['Lado', function (x) { return H.esc(x.lado); }, '42pt'], ['Cuadrante', function (x) { return '<b>' + H.esc(x.cuadrante) + '</b>'; }, '50pt'], ['Tipo', function (x) { return H.esc(x.tipo_hallazgo); }, '80pt'],
+          ['% rotura', function (x) { return '<b class="' + sev(x.porcentaje_rotura) + '">' + pct(x.porcentaje_rotura) + '</b>'; }, '44pt'], ['Descripción', function (x) { return H.txt(x.descripcion); }], ['Lámina', function (x) { return H.esc(x.lamina); }, '44pt']
+        ], t.s, 'Sin roturas registradas.') + (imgs[i] || '');
+      });
+      h += '<h2>Matriz de riesgo</h2>' + H.tabla([
+        ['Tolva', function (x) { return '<b>' + H.esc(x.equipo) + '</b>'; }, '50pt'], ['Componente', function (x) { return H.esc(x.componente); }, '70pt'], ['Cuadrantes', function (x) { return H.esc(x.cuadrantes); }, '60pt'],
+        ['Hallazgo', function (x) { return H.txt(x.hallazgo); }], ['Nivel de riesgo', function (x) { return H.sello(x.nivel_riesgo); }, '60pt'], ['Consecuencia operacional', function (x) { return H.txt(x.consecuencia_operacional); }]
+      ], mx, 'Sin matriz de riesgo para este informe.');
+      h += '<h2>Avisos SAP priorizados</h2>' + H.tabla([
+        ['N° aviso', function (x) { return '<b>' + H.esc(x.n_aviso) + '</b>'; }, '50pt'], ['TAG', function (x) { return H.esc(x.tag); }, '46pt'], ['Ejecutor', function (x) { return H.esc(x.ejecutor); }, '40pt'],
+        ['Modo de falla', function (x) { return H.txt(x.modo_falla); }], ['Recomendación', function (x) { return H.txt(x.recomendacion); }], ['Categoría', function (x) { return H.sello(x.categoria); }, '50pt'],
+        ['Prioridad', function (x) { return H.esc(x.prioridad); }, '44pt'], ['Fecha hallazgo', function (x) { return H.esc(fecha(x.fecha_hallazgo)); }, '48pt']
+      ], av, 'Sin avisos para este informe.');
+      var es = typeof especFijas === 'function' ? especFijas() : [];
+      if (es && es.length) h += '<h2>Especificaciones técnicas</h2>' + H.tabla([
+        ['Componente', function (x) { return H.esc(x.componente); }], ['Especificación', function (x) { return H.esc(x.especificacion); }], ['Valor', function (x) { return H.esc([x.valor, x.unidad].filter(Boolean).join(' ')); }, '70pt'], ['Detalle', function (x) { return H.txt(x.detalle); }]
+      ], es);
+      return { titulo: /^informe/i.test(inf.titulo || '') ? inf.titulo : 'Informe de inspección · ' + (inf.titulo || 'Tolvas Área 200'), sub: (inf.semana || '') + ' · ' + fecha(inf.fecha_informe) + ' · ' + (B.subtitulo || ''), archivo: 'Informe_Tolvas_Area200_' + String(inf.semana || inf.id).replace(/\s+/g, ''), cuerpo: h };
+    });
+  }
+  msminInformes({ app: B.titulo || 'Inspección Tolvas', autor: function () { return ''; }, lista: lista, informe: informe });
+})();
+</script>

@@ -1,0 +1,87 @@
+
+<script>
+/* MSMIN · Informes PDF de Ruedas tripper. Una inspección = una semana de mediciones (año + semana). */
+(function () {
+  var COL = ['#2A6CB0', '#C77700', '#2E8B57', '#7D5BB5', '#1F8A9C', '#B5523F', '#6B7A83', '#9C2A6C'];
+  function fechaSem(k) { var f = S.med.filter(function (r) { return semKey(r) === k && r.fecha_inspeccion; }).map(function (r) { return r.fecha_inspeccion.slice(0, 10); }).sort(); return f[0] || ''; }
+  function lista() {
+    var po = porId();
+    return semanas(S.med).slice().reverse().map(function (k) {
+      var filas = S.med.filter(function (r) { return semKey(r) === k; });
+      var al = filas.filter(function (r) { return condDe(num(r.pestana_int_mm), num(r.pestana_ext_mm)) === 'ALARMA'; }).length;
+      var y = k.slice(0, 4), w = +k.slice(5);
+      return {
+        clave: k, titulo: 'Semana ' + w + ' · ' + y + (fechaSem(k) ? ' · ' + fmtF(fechaSem(k)) : ''),
+        sub: filas.length + (filas.length === 1 ? ' rueda medida' : ' ruedas medidas') + (al ? ' · ' + al + ' en alarma' : ' · sin alarmas') + (filas[0] && filas[0].n_ot ? ' · OT ' + filas[0].n_ot : ''),
+        buscar: 'SEM ' + w + ' S' + w + ' W' + w + ' ' + y + ' ' + fmtF(fechaSem(k)) + ' ' + filas.map(function (r) { return [r.n_ot, r.condicion, r.observacion, r.registrado_por].join(' '); }).join(' ')
+      };
+    });
+  }
+  /** Gráfico de la pestaña mínima de cada rueda hasta la semana del informe (canvas -> PNG) */
+  function grafico(k) {
+    var sems = semanas(S.med).filter(function (s) { return s <= k; }).slice(-16);
+    if (sems.length < 2) return '';
+    var W = 1500, Hh = 560, L = 70, R = 70, T = 30, B = 70, c = document.createElement('canvas'); c.width = W; c.height = Hh;
+    var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, Hh);
+    var series = S.ruedas.map(function (rd) {
+      return sems.map(function (s) { var r = S.med.filter(function (m) { return semKey(m) === s && rKey(m) === kOf(rd); })[0]; if (!r) return null; var v = [num(r.pestana_int_mm), num(r.pestana_ext_mm)].filter(function (v) { return v != null; }); return v.length ? Math.min.apply(null, v) : null; });
+    });
+    var vals = [].concat.apply([S.lim], series).filter(function (v) { return v != null; });
+    var mn = Math.floor(Math.min.apply(null, vals) - 2), mx = Math.ceil(Math.max.apply(null, vals) + 2);
+    var sx = function (i) { return L + i * (W - L - R) / (sems.length - 1); }, sy = function (v) { return T + (Hh - T - B) * (1 - (v - mn) / (mx - mn)); };
+    x.font = '22px Arial'; x.fillStyle = '#4A5A66'; x.strokeStyle = '#E1E7EC'; x.lineWidth = 1;
+    var paso = Math.max(1, Math.ceil((mx - mn) / 8));
+    for (var v = mn; v <= mx; v += paso) { x.beginPath(); x.moveTo(L, sy(v)); x.lineTo(W - R, sy(v)); x.stroke(); x.textAlign = 'right'; x.fillText(v, L - 10, sy(v) + 7); }
+    x.textAlign = 'center';
+    sems.forEach(function (s, i) { x.fillText(semLabel(s), sx(i), Hh - B + 34); });
+    series.forEach(function (ser, j) {
+      x.strokeStyle = COL[j % COL.length]; x.fillStyle = COL[j % COL.length]; x.lineWidth = 4; x.beginPath(); var on = false;
+      ser.forEach(function (v, i) { if (v == null) { on = false; return; } if (on) x.lineTo(sx(i), sy(v)); else x.moveTo(sx(i), sy(v)); on = true; });
+      x.stroke();
+      ser.forEach(function (v, i) { if (v != null) { x.beginPath(); x.arc(sx(i), sy(v), 6, 0, 7); x.fill(); } });
+    });
+    x.strokeStyle = '#B3261E'; x.lineWidth = 4; x.setLineDash([16, 10]); x.beginPath(); x.moveTo(L, sy(S.lim)); x.lineTo(W - R, sy(S.lim)); x.stroke(); x.setLineDash([]);
+    x.font = 'bold 22px Arial'; x.fillStyle = '#B3261E'; x.textAlign = 'right'; x.fillText('Límite ' + S.lim + ' mm', W - R, sy(S.lim) + 30);
+    var ley = S.ruedas.map(function (rd, j) { return '<span style="color:' + COL[j % COL.length] + ';font-weight:bold">■</span> ' + esc(rNom(rd)); }).join(' &nbsp; ');
+    return '<div class="img"><img src="' + c.toDataURL('image/png') + '" style="width:100%"></div><p class="nota" style="text-align:center">' + ley + '</p>';
+  }
+  function informe(k, H) {
+    var filas = S.med.filter(function (r) { return semKey(r) === k; });
+    if (!filas.length) throw new Error('No hay mediciones en esa semana');
+    var po = porId(), ult = semanas(S.med).slice(-1)[0] === k, y = k.slice(0, 4), w = +k.slice(5);
+    var porRueda = S.ruedas.map(function (rd) { var r = filas.filter(function (m) { return rKey(m) === kOf(rd); })[0]; return { rd: rd, r: r, o: r ? po[r.id] : null, a: analisis(kOf(rd)) }; });
+    var al = porRueda.filter(function (x) { return x.r && condDe(num(x.r.pestana_int_mm), num(x.r.pestana_ext_mm)) === 'ALARMA'; });
+    var minP = null; porRueda.forEach(function (x) { if (!x.o) return; [x.o.pi, x.o.pe].forEach(function (v) { if (v != null && (minP == null || v < minP)) minP = v; }); });
+    var quien = filas.map(function (r) { return String(r.registrado_por || '').split(' · ')[0].trim(); }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).join(', ');
+    var h = H.ficha([['Equipo', S.equipo], ['Semana', 'SEM ' + w + ' · ' + y], ['Fecha de inspección', fmtF(fechaSem(k))], ['N° OT', filas.map(function (r) { return r.n_ot; }).filter(Boolean)[0] || S.n_ot || ''],
+      ['Límite de desgaste', S.lim + ' mm'], ['Registrado por', quien]]);
+    h += H.kpis([[filas.length, 'Ruedas medidas', ''], [al.length, 'Ruedas en alarma', al.length ? 'crit' : 'ok'], [minP == null ? '—' : fx(minP) + ' mm', 'Pestaña mínima', minP != null && minP <= S.lim ? 'crit' : (minP != null && minP <= S.lim + 2 ? 'amb' : 'ok')],
+      [porRueda.filter(function (x) { return x.o && x.o.cambio; }).length, 'Cambios de rueda', '']]);
+    var mm = function (v) { return v == null ? '—' : fx(v); };
+    var cols = [
+      ['Rueda', function (x) { return '<b>N°' + H.esc(x.rd.n) + '</b>'; }, '28pt'], ['Tipo', function (x) { return H.esc(x.rd.tipo); }, '48pt'], ['Lado', function (x) { return H.esc(x.rd.lado); }, '44pt'],
+      ['P.I (mm)', function (x) { return x.o ? '<b>' + mm(x.o.pi) + '</b>' : '—'; }, '32pt'], ['P.E (mm)', function (x) { return x.o ? '<b>' + mm(x.o.pe) + '</b>' : '—'; }, '32pt'],
+      ['Desgaste P.I / P.E', function (x) { return x.o && x.o.dias != null ? mm(x.o.dPi) + ' / ' + mm(x.o.dPe) + ' mm<br><span class="nota">en ' + x.o.dias + ' días</span>' : '—'; }, '56pt'],
+      ['Tasa (mm/sem)', function (x) { return x.o && x.o.dias ? fx(Math.max(x.o.tPi || 0, x.o.tPe || 0), 2) : '—'; }, '38pt']
+    ];
+    if (ult) cols.push(['Semanas restantes', function (x) { return x.a.semRest == null ? '—' : '<b class="' + (x.a.semRest <= 4 ? 'crit' : '') + '">' + fx(x.a.semRest, 0) + '</b> (' + x.a.ladoCrit + ')'; }, '46pt']);
+    cols.push(['Condición', function (x) { if (!x.r) return 'Sin medición'; var c = condDe(num(x.r.pestana_int_mm), num(x.r.pestana_ext_mm)); return H.sello(c) + (x.r.condicion && x.r.condicion.toUpperCase() !== c ? '<br>' + H.esc(x.r.condicion) : '') + (x.o && x.o.cambio ? '<br><b>Cambio de rueda</b>' : ''); }, '54pt']);
+    cols.push(['Observación', function (x) { return x.r ? H.txt(x.r.observacion) : ''; }]);
+    h += '<h2>Mediciones de pestañas</h2>' + H.tabla(cols, porRueda);
+    h += '<p class="nota">P.I = pestaña interior · P.E = pestaña exterior. Desgaste y tasa respecto de la medición anterior de cada rueda. Condición ALARMA: alguna pestaña en el límite de ' + S.lim + ' mm o bajo él.' + (ult ? ' Semanas restantes: estimación con la tendencia desde el último cambio de rueda.' : '') + '</p>';
+    var g = grafico(k);
+    if (g) h += '<h2>Tendencia de la pestaña mínima por rueda</h2>' + g;
+    var hz = (S.hz || []).filter(function (x) { var n = parseInt(String(x.semana || '').replace(/\D/g, ''), 10); return n === w && (!x.fecha || String(x.fecha).slice(0, 4) === y); });
+    h += '<h2>Hallazgos de la semana</h2>' + H.tabla([
+      ['ID', function (x) { return '<b>' + H.esc(x.id) + '</b>'; }, '40pt'], ['Fecha', function (x) { return H.esc(fmtF(x.fecha)); }, '46pt'], ['Rueda / componente', function (x) { return H.esc([x.rueda, x.componente].filter(Boolean).join(' · ')); }, '80pt'],
+      ['Descripción', function (x) { return H.txt(x.descripcion); }], ['Criticidad', function (x) { return H.sello(x.criticidad); }, '50pt'], ['Acción', function (x) { return H.txt(x.accion); }], ['Estado', function (x) { return H.sello(x.estado); }, '52pt']
+    ], hz, 'Sin hallazgos registrados en esta semana.');
+    return { titulo: 'Informe de inspección · Ruedas tripper ' + S.equipo, sub: 'Control semanal de pestañas · SEM ' + w + ' · ' + y + ' · ' + fmtF(fechaSem(k)), archivo: 'Informe_Ruedas_' + S.equipo + '_' + y + '_SEM' + (w < 10 ? '0' : '') + w, cuerpo: h };
+  }
+  msminInformes({
+    app: 'Ruedas tripper ' + (S.equipo || ''), logo: (window.BOOT && BOOT.logo) || '',
+    autor: function () { return S.autor || S.usuario || ''; },
+    lista: lista, informe: informe
+  });
+})();
+</script>

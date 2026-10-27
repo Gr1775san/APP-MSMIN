@@ -1,0 +1,97 @@
+
+<script>
+/* MSMIN · Informes PDF para las apps de avisos + hallazgos (Puente apilador y Tambores aglomeradores).
+   Una inspección = una semana (campo "semana" de los hallazgos y avisos). */
+(function () {
+  function semInfo(sem, fechas) {
+    var s = String(sem || '').trim(), y = (s.match(/(20\d\d)/) || [])[1], w = (s.replace(/20\d\d/, '').match(/(\d{1,2})/) || [])[1];
+    var f = fechas.filter(Boolean).sort();
+    if (!y && f.length) y = f[f.length - 1].slice(0, 4);
+    return { y: +y || 0, w: +w || 0, txt: w ? 'Semana ' + (+w) + (y ? ' · ' + y : '') : (s || 'Sin semana'), f: f };
+  }
+  function grupos() {
+    var g = {};
+    function add(t, r, f) {
+      var k = String(r.semana || '').trim() || 'Sin semana';
+      var o = g[k] || (g[k] = { clave: k, hz: [], av: [], fechas: [] });
+      o[t].push(r); if (f && /^\d{4}-\d{2}-\d{2}/.test(f)) o.fechas.push(f.slice(0, 10));
+    }
+    S.data.hallazgos.forEach(function (r) { add('hz', r, r.fecha_inspeccion); });
+    S.data.avisos.forEach(function (r) { add('av', r, ''); });
+    return Object.keys(g).map(function (k) { var o = g[k]; o.i = semInfo(k, o.fechas); return o; })
+      .sort(function (a, b) { return (b.i.y * 100 + b.i.w) - (a.i.y * 100 + a.i.w) || String(b.i.f.slice(-1)[0] || '').localeCompare(String(a.i.f.slice(-1)[0] || '')); });
+  }
+  var esCrit = function (r) { return /^CR[IÍ]TIC/.test(catKey(r)); };
+  var abiertoT = function (t, r) { return abierto(t, r); };
+  function lista() {
+    return grupos().map(function (o) {
+      var d = o.i.f.length ? (o.i.f[0] === o.i.f[o.i.f.length - 1] ? fmtF(o.i.f[0]) : fmtF(o.i.f[0]) + ' al ' + fmtF(o.i.f[o.i.f.length - 1])) : '';
+      var cr = o.hz.filter(esCrit).length;
+      return {
+        clave: o.clave, titulo: o.i.txt + (d ? ' · ' + d : ''),
+        sub: o.hz.length + (o.hz.length === 1 ? ' hallazgo' : ' hallazgos') + (cr ? ' (' + cr + ' críticos)' : '') + ' · ' + o.av.length + (o.av.length === 1 ? ' aviso' : ' avisos'),
+        buscar: o.clave + ' ' + o.i.f.map(fmtF).join(' ') + ' ' + o.hz.concat(o.av).map(function (r) { return Object.keys(r).filter(function (k) { return k !== 'fotos'; }).map(function (k) { return r[k]; }).join(' '); }).join(' ')
+      };
+    });
+  }
+  var ANCHO = { id: '40pt', orden: '16pt', tag: '46pt', tipo: '50pt', componente: '62pt', activo: '56pt', modo_falla: '27%', hallazgo: '25%', accion: '24%',
+    recomendacion: '16%', categoria: '46pt', criticidad: '46pt', prioridad: '50pt', estado: '58pt', fecha_hallazgo: '46pt', _dias: '26pt', n_aviso: '48pt', n_ot: '50pt' };
+  function cols(lista) { return lista.map(function (x) { return [x[1], function (r) { return celda(x[0], r); }, ANCHO[x[0]]]; }); }
+  function celda(k, r) {
+    if (k === 'recomendacion' && r.nota) return H_.txt(r.recomendacion) + '<br><i>' + H_.txt(r.nota) + '</i>';
+    var v = r[k];
+    if (k === '_dias') return String(dias(r.fecha_hallazgo));
+    if (k === 'categoria' || k === 'criticidad' || k === 'prioridad' || k === 'estado') return H_.sello(v);
+    if (k.indexOf('fecha') === 0) return H_.esc(fmtF(v));
+    if (k === 'id') return '<b>' + H_.esc(v) + '</b>';
+    return H_.txt(v);
+  }
+  var H_ = null;
+  function informe(clave, H) {
+    H_ = H;
+    var o = grupos().filter(function (x) { return x.clave === clave; })[0];
+    if (!o) throw new Error('No se encontró la inspección ' + clave);
+    var titulo = document.querySelector('header .ttl h1') ? document.querySelector('header .ttl h1').textContent.trim() : 'Inspección';
+    var hz = o.hz.slice().sort(function (a, b) { return String(a.id).localeCompare(String(b.id)); });
+    var av = o.av.slice().sort(function (a, b) { return (+a.orden || 999) - (+b.orden || 999) || String(a.id).localeCompare(String(b.id)); });
+    var insp = hz.map(function (r) { return r.inspector; }).filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(', ');
+    var f = o.i.f, fechas = f.length ? (f[0] === f[f.length - 1] ? fmtF(f[0]) : fmtF(f[0]) + ' al ' + fmtF(f[f.length - 1])) : '';
+    var c = S.config || {};
+    var h = H.ficha([['Equipo', c.equipo || titulo], ['Semana', o.clave], ['Fecha de inspección', fechas], ['Inspector', insp],
+      ['Gerencia', c.gerencia || ''], ['Contrato', c.contrato || '']]);
+    h += H.kpis([
+      [hz.length, 'Hallazgos', ''], [hz.filter(esCrit).length, 'Hallazgos críticos', hz.filter(esCrit).length ? 'crit' : 'ok'],
+      [hz.filter(function (r) { return abiertoT('hallazgos', r); }).length, 'Hallazgos abiertos', 'amb'],
+      [av.length, 'Avisos de la semana', ''], [av.filter(function (r) { return abiertoT('avisos', r) && esCrit(r); }).length, 'Avisos críticos abiertos', 'crit']]);
+
+    var colsHz = SCHEMA.hallazgos.tabla.filter(function (x) { return x[0] !== 'fecha_inspeccion'; }).slice();
+    if (SCHEMA.hallazgos.campos.some(function (x) { return x[0] === 'accion'; })) colsHz.splice(colsHz.length - 2, 0, ['accion', 'Acción requerida']);
+    h += '<h2>Hallazgos de la inspección</h2>' + H.tabla(cols(colsHz), hz, 'No se registraron hallazgos en esta semana.');
+
+    var conFotos = hz.concat(av).map(function (r) {
+      return { titulo: r.id + ' · ' + (r.componente || r.activo || r.tag || ''), ids: String(r.fotos || '').split('\n').filter(Boolean).map(fileId).filter(Boolean) };
+    });
+    var fh = H.fotos(conFotos);
+    if (fh) h += '<h2>Registro fotográfico</h2>' + fh;
+
+    var colsAv = SCHEMA.avisos.tabla.filter(function (x) { return x[0] !== 'nota'; });
+    colsAv.splice(colsAv.map(function (x) { return x[0]; }).indexOf('modo_falla') + 1, 0, ['recomendacion', 'Recomendación']);
+    h += '<h2>Avisos SAP registrados en la semana</h2>' + H.tabla(cols(colsAv), av, 'No hay avisos registrados en esta semana.');
+
+    var mx = S.data.matriz_riesgo || [];
+    if (mx.length) h += '<h2>Matriz de riesgo</h2>' + H.tabla(cols([['id', 'ID']].concat(SCHEMA.matriz_riesgo.campos)), mx);
+    if (S.zonas && S.zonas.length) {
+      var kz = Object.keys(S.zonas[0]).filter(function (k) { return k !== 'actualizado_por' && k !== 'fotos'; });
+      h += '<h2>Zonas críticas</h2>' + H.tabla(kz.map(function (k) { return [k.replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }), function (r) { return H.esc(r[k]); }]; }), S.zonas);
+    }
+    var nom = titulo.replace(/\s+/g, '_') + '_' + clave.replace(/\s+/g, '');
+    return { titulo: 'Informe de inspección · ' + titulo, sub: o.i.txt + (fechas ? ' · ' + fechas : ''), archivo: 'Informe_' + nom, cuerpo: h };
+  }
+  msminInformes({
+    app: (document.querySelector('header .ttl h1') || {}).textContent || 'Inspección',
+    logo: (window.BOOT && BOOT.logo) || '',
+    autor: function () { return S.autor || S.usuario || ''; },
+    lista: lista, informe: informe
+  });
+})();
+</script>
