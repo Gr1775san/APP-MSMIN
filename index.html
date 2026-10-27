@@ -459,7 +459,7 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
       <small>En el proyecto de la app: Implementar &#8250; Gestionar implementaciones &#8250; copiar la URL de la aplicación web.</small></div>
     <div class="fld"><label for="fIcono">Ícono</label><select id="fIcono">
       <option value="">Iniciales del nombre</option><option value="rueda">Rueda de acero</option><option value="puente">Puente apilador</option>
-      <option value="tambor">Tambor aglomerador</option><option value="tolva">Tolva (plano 3D)</option><option value="pauta">Pauta / lista de chequeo</option></select></div>
+      <option value="tambor">Tambor aglomerador</option><option value="tolva">Tolva (plano 3D)</option><option value="pauta">Pauta / lista de chequeo</option><option value="polin">Polines de correa</option></select></div>
     <div class="fld"><label for="fArea">Área / equipo</label><input id="fArea" placeholder="Ej: Puente apilador 210-CV-03"></div>
     <div class="fld"><label for="fDesc">Descripción</label><textarea id="fDesc" placeholder="Para qué sirve la app"></textarea></div>
     <div class="fld"><label for="fPlanilla">Enlace de su base de datos (opcional)</label><input id="fPlanilla" inputmode="url" placeholder="https://docs.google.com/spreadsheets/..."></div>
@@ -592,6 +592,21 @@ var ILU = {
     s += '<circle cx="' + (ox + W * 1.5 / 7) + '" cy="' + (oy + 10 + H * 6.5 / 8) + '" r="2.6" fill="#F08A80"/>';
     return s + '</svg>';
   })(),
+
+  // Polines: estación de carga en artesa (3 polines) sobre su bastidor, correa con mineral y un polín de retorno con falla.
+  polin: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
+    '<defs><linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E4ECF3"/><stop offset=".55" stop-color="#9FB1C2"/><stop offset="1" stop-color="#5E7286"/></linearGradient></defs>' +
+    '<path d="M14 30 Q48 50 82 30" fill="none" stroke="#2A3846" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M30 33 Q48 18 66 33 Q48 42 30 33 Z" fill="#8C6B4A"/><path d="M38 31 Q48 24 58 31" fill="none" stroke="#A9845E" stroke-width="2.5" stroke-linecap="round"/>' +
+    '<g transform="rotate(32 22 42)"><rect x="10" y="37" width="24" height="10" rx="5" fill="url(#gP)" stroke="#5E7286" stroke-width="1"/></g>' +
+    '<rect x="36" y="46" width="24" height="10" rx="5" fill="url(#gP)" stroke="#5E7286" stroke-width="1"/>' +
+    '<g transform="rotate(-32 74 42)"><rect x="62" y="37" width="24" height="10" rx="5" fill="url(#gP)" stroke="#5E7286" stroke-width="1"/></g>' +
+    '<path d="M12 58 L84 58 M16 58 L16 70 M80 58 L80 70 M48 56 L48 70" stroke="#5E7286" stroke-width="3" stroke-linecap="round"/>' +
+    '<path d="M8 78 L88 78" stroke="#2A3846" stroke-width="4" stroke-linecap="round"/>' +
+    '<rect x="22" y="80" width="22" height="9" rx="4.5" fill="url(#gP)" stroke="#5E7286" stroke-width="1"/>' +
+    '<rect x="52" y="80" width="22" height="9" rx="4.5" fill="#F08A80" stroke="#B3261E" stroke-width="1"/>' +
+    '<circle cx="63" cy="84.5" r="2" fill="currentColor"/>' +
+    '</svg>',
 
   // Pautas de inspección: portapapeles con lista de chequeo.
   pauta: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
