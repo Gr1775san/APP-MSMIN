@@ -411,7 +411,7 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
           <button class="btn dan" id="bSalir">Cerrar sesión</button>
         </div>
         <p class="note" id="instNota"></p>
-        <label class="opt" for="cVisor"><input type="checkbox" id="cVisor"><span><b>Abrir las apps dentro de MSMIN</b><small>Si al abrir una app aparece "Error 401", déjalo desactivado: cada app se abre en su propia pestaña y funciona siempre.</small></span></label>
+        <label class="opt" for="cVisor"><input type="checkbox" id="cVisor"><span><b>Abrir las apps dentro de MSMIN</b><small>Desactivado (recomendado): la app se abre en esta misma pantalla y vuelves con Atrás. Actívalo solo si quieres verla dentro de MSMIN; con varias cuentas de Google puede aparecer "Error 401".</small></span></label>
       </div>
 
       <div id="adminZona" hidden>
@@ -802,10 +802,10 @@ function abrir(id) {
   if (!a) return;
   if (!a.url) { if (esAdmin()) editarApp(a.id); else toast('Esta app todavía no tiene enlace', true); return; }
   if (!visorDentro()) {
-    // En su propia pestaña Google reconoce la sesión siempre (dentro de otra página falla con varias cuentas o sin cookies de terceros)
-    var w = window.open(a.url, '_blank');
-    if (w) { try { w.opener = null; } catch (e) {} }
-    else toast('El navegador bloqueó la pestaña nueva. Permite las ventanas emergentes para este sitio.', true);
+    // Se abre en esta misma pestaña: Google reconoce la sesión (dentro de un marco falla con varias cuentas
+    // o sin cookies de terceros) y el botón Atrás del teléfono o del navegador vuelve a MSMIN.
+    lsSet('msmin.ultimaApp', a.id);
+    location.assign(a.url);
     return;
   }
   var cambia = !S.actual || S.actual.id !== a.id;
@@ -1055,7 +1055,7 @@ aplicarVisor();
 $('#cVisor').addEventListener('change', function () {
   lsSet('msmin.visor', this.checked); aplicarVisor();
   if (!this.checked && S.actual) { S.actual = null; $('#frame').removeAttribute('src'); pintar(); }
-  toast(this.checked ? 'Las apps se abrirán dentro de MSMIN' : 'Las apps se abrirán en su propia pestaña');
+  toast(this.checked ? 'Las apps se abrirán dentro de MSMIN' : 'Las apps se abrirán en esta pantalla; vuelve con Atrás');
 });
 
 /* ===== Logo animado ===== */
