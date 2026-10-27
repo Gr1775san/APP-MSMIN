@@ -483,10 +483,10 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
     <div class="fld"><label for="uEmail">Correo</label><input id="uEmail" type="email" inputmode="email" placeholder="nombre@empresa.cl"><small id="uEmailNota">Con este correo entrará a la app.</small></div>
     <div class="fld"><label for="uNombre">Nombre</label><input id="uNombre" placeholder="Ej: Juan Pérez"></div>
     <div class="frow">
-      <div class="fld"><label for="uRol">Rol</label><select id="uRol"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
+      <div class="fld"><label for="uRol">Rol</label><select id="uRol"><option value="usuario">Usuario</option><option value="visor">Visor</option><option value="admin">Administrador</option></select></div>
       <div class="fld"><label for="uActivo">Acceso</label><select id="uActivo"><option value="SI">Permitido</option><option value="NO">Bloqueado</option></select></div>
     </div>
-    <p class="note">Usuario: ve y usa las apps. Administrador: además agrega apps y personas.</p>
+    <p class="note"><b>Administrador:</b> hace de todo en todas las apps (incluye borrar, bases de datos, apps y personas). <b>Usuario:</b> ingresa datos y descarga documentos; sin acceso a las bases de datos ni a borrar. <b>Visor:</b> solo mira las apps, sin agregar, modificar ni descargar.</p>
     <button class="btn sec full" id="uNuevoCodigo" hidden style="margin-top:8px">Generar código nuevo (olvidó la contraseña)</button>
   </div>
   <div class="p-foot"><button class="btn dan" id="uEliminar">Quitar</button><button class="btn pri" id="uGuardar">Guardar</button></div>
@@ -809,7 +809,7 @@ function pintar() {
   $('#tUser').setAttribute('aria-label', 'Ajustes de ' + S.email);
   $('#offline').hidden = !S.offline;
   $('#cEmail').textContent = S.email;
-  $('#cRol').textContent = esAdmin() ? 'Administrador' : 'Usuario';
+  $('#cRol').textContent = ({ admin: 'Administrador', usuario: 'Usuario', visor: 'Visor (solo lectura)' })[S.rol] || S.rol;
   $('#sideAjTx').textContent = esAdmin() ? 'Cuenta, apps y equipo' : 'Mi cuenta';
   $('#adminZona').hidden = !esAdmin();
 
@@ -840,7 +840,7 @@ function pintar() {
         : u.codigo ? '<span class="badge wa">' + (u.cuenta_activada ? 'CÓDIGO NUEVO' : 'PENDIENTE') + '</span>'
         : '<span class="badge si">ACTIVA</span>';
       return '<tr data-user="' + esc(u.email) + '"><td><b>' + esc(u.nombre || u.email.split('@')[0]) + '</b><small>' + esc(u.email) + '</small></td>' +
-        '<td>' + (u.rol === 'admin' ? '<span class="badge ad">ADMIN</span>' : '<span class="badge">USUARIO</span>') + '</td><td>' + est + '</td></tr>';
+        '<td>' + (u.rol === 'admin' ? '<span class="badge ad">ADMIN</span>' : u.rol === 'visor' ? '<span class="badge">VISOR</span>' : '<span class="badge">USUARIO</span>') + '</td><td>' + est + '</td></tr>';
     }).join('') || '<tr><td colspan="3" class="empty">Sin personas</td></tr>';
   }
 
@@ -859,19 +859,34 @@ function abrir(id) {
     // o sin cookies de terceros) y el botón Atrás del teléfono o del navegador vuelve a MSMIN.
     lsSet('msmin.ultimaApp', a.id);
     abriendo(a);
-    location.assign(a.url);
+    conPase(a.url).then(function (u) { location.assign(u); });
     return;
   }
   var cambia = !S.actual || S.actual.id !== a.id;
   S.actual = a;
   $('#vTitulo').textContent = a.nombre;
   $('#bNueva').href = a.url;
-  $('#bPlanilla').style.display = a.planilla_url ? '' : 'none';
-  if (a.planilla_url) $('#bPlanilla').href = a.planilla_url;
+  $('#bPlanilla').style.display = a.planilla_url && esAdmin() ? '' : 'none';
+  if (a.planilla_url && esAdmin()) $('#bPlanilla').href = a.planilla_url; else $('#bPlanilla').removeAttribute('href');
   if (cambia) cargarFrame();
   pintar();
   ir('app');
 }
+/** Pide al servidor un pase de un solo uso (2 min) para que la app sepa quién entra y con qué rol */
+function conPase(url) {
+  return sb.rpc('portal_ticket').then(function (r) {
+    if (r.error || !r.data) throw r.error || new Error('sin pase');
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(r.data);
+  }).catch(function () { return url; });
+}
+/* Los enlaces «Abrir aparte» también llevan pase */
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest && ev.target.closest('#bNueva,#fHelpNueva,#fTipNueva');
+  if (!t || !S.actual) return;
+  ev.preventDefault();
+  var w = window.open('about:blank', '_blank');
+  conPase(S.actual.url).then(function (u) { if (w) w.location = u; else location.assign(u); });
+}, true);
 var FT = { espera: null, tip: null, cargada: false };
 function cargarFrame() {
   FT.cargada = false;
@@ -879,7 +894,8 @@ function cargarFrame() {
   $('#fHelp').classList.remove('on'); $('#fTip').classList.remove('on');
   $('#fHelpNueva').href = $('#fTipNueva').href = S.actual.url;
   $('#fLoad').style.display = 'grid';
-  $('#frame').src = S.actual.url;
+  var app = S.actual;
+  conPase(app.url).then(function (u) { if (S.actual === app) $('#frame').src = u; });
   FT.espera = setTimeout(function () { if (!FT.cargada) { $('#fLoad').style.display = 'none'; $('#fHelp').classList.add('on'); } }, 15000);
 }
 $('#frame').addEventListener('load', function () {
