@@ -1,7 +1,7 @@
 /* Service worker de Estructural MSMIN: deja la app abrible sin señal.
    Los datos (Supabase) nunca se guardan aquí; la lista de apps se guarda aparte en el teléfono. */
-const VERSION = 'msmin-v6';
-const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/logo.png'];
+const VERSION = 'msmin-v7';
+const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/logo.png', './icons/logo-animado.jpg'];
 const CDN = ['https://cdn.jsdelivr.net/', 'https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 
 self.addEventListener('install', (e) => {
@@ -15,6 +15,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  if (req.headers.has('range') || req.destination === 'video') return; // los videos van directo a la red
   const url = new URL(req.url);
 
   // Página: primero la red (para recibir versiones nuevas), si no hay señal la copia guardada.

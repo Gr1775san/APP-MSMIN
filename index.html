@@ -39,6 +39,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .logo-chip img{display:block;height:34px;width:auto}
 .logo-card{background:#fff;border-radius:16px;padding:14px 18px;margin-bottom:16px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
 .logo-card img{display:block;width:210px;max-width:60vw;height:auto}
+/* Logo animado (video en bucle, sin sonido) */
+.logo-vid{display:block;flex:none;height:46px;aspect-ratio:400/204;border-radius:9px;overflow:hidden;background:#10305A}
+.logo-vid video,.logo-card.vid video{display:block;width:100%;height:100%;object-fit:cover}
+.logo-vid video{transform:scale(1.16)}
+.logo-card.vid{padding:0;width:min(300px,72vw);aspect-ratio:400/204;overflow:hidden;background:#10305A}
 .ttl{min-width:0;flex:1}
 .ttl h1{margin:0;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ttl small{display:block;color:var(--ink3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -296,7 +301,7 @@ html{-webkit-text-size-adjust:100%}
 <!-- ============ ACCESO ============ -->
 <section class="gate" id="gate" hidden>
   <div class="brand">
-    <div class="logo-card"><img src="icons/logo.png" alt="msmin by SGS" width="210" height="93"></div>
+    <div class="logo-card vid"><video autoplay muted loop playsinline preload="auto" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></div>
     <h1>Estructural MSMIN</h1>
     <p>Ingeniería de mantenimiento · Contrato 4600030865</p>
   </div>
@@ -337,7 +342,7 @@ html{-webkit-text-size-adjust:100%}
 
 <!-- ============ APP ============ -->
 <header class="top" id="top" hidden>
-  <div class="logo-chip"><img src="icons/logo.png" alt="msmin by SGS" width="79" height="35"></div>
+  <span class="logo-vid"><video autoplay muted loop playsinline preload="auto" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></span>
   <div class="ttl"><h1>Estructural MSMIN</h1><small>Ingeniería de mantenimiento · Contrato 4600030865</small></div>
   <button class="user" id="tUser" data-go="ajustes"></button>
   <span class="offline" id="offline" hidden>Sin conexión · lista guardada</span>
@@ -1014,6 +1019,15 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   });
 }
 window.addEventListener('online', function () { if (S.offline) entrar().catch(function () {}); });
+
+/* ===== Logo animado ===== */
+(function () {
+  var quieto = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $$('.logo-vid video, .logo-card.vid video').forEach(function (v) {
+    if (quieto) { v.removeAttribute('autoplay'); v.pause(); return; }
+    var p = v.play(); if (p && p.catch) p.catch(function () {}); // algunos teléfonos en ahorro de energía no reproducen: queda la imagen fija
+  });
+})();
 
 /* ===== Inicio ===== */
 sb.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT' && !$('#shell').hidden) mostrarGate(false); });
