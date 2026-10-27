@@ -239,14 +239,28 @@ html{-webkit-text-size-adjust:100%}
   #tblU td:nth-child(2){grid-column:2;grid-row:1;text-align:right}
   #tblU td:nth-child(3){grid-column:2;grid-row:2;text-align:right}
 }
-@media (min-width:720px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Menú de apps: botones grandes con ilustración y título */
+.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:16px 10px 14px;min-height:172px;
+  background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:16px;box-shadow:var(--shadow);color:var(--ink);text-align:center;cursor:pointer;transition:transform .12s ease,background .12s ease}
+.tile:active{transform:scale(.97);background:var(--surface2)}
+.tile:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tile .ilu{width:92px;height:92px;border-radius:22px;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,#1F3B58 0%,#0F2034 75%);color:var(--c);flex:none}
+.tile .ilu svg{width:80px;height:80px;display:block}
+.tile .ilu.sg{background:var(--c);color:#fff;font:700 28px "IBM Plex Sans Condensed",sans-serif}
+.tile .tt{font:600 14.5px/1.25 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;letter-spacing:.01em;text-wrap:balance;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tile .sin{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:700;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:2px 6px}
+.nav-it .ilu-mini{background:#0F2034}
+.nav-it .ilu-mini svg{width:28px;height:28px}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:active{transform:none}}
+@media (min-width:720px){ .cards{grid-template-columns:repeat(3,minmax(0,1fr))} }
 @media (min-width:960px){
   .side{display:block}
   .bnav{display:none}
   .frame-wrap{bottom:0}
   .pad{padding:24px 26px 40px}
   .ib .lb{display:inline}
-  .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cards{grid-template-columns:repeat(4,minmax(0,1fr))}
   .toast{bottom:28px}
   .panel{inset:0 0 0 auto;width:min(520px,100vw);box-shadow:-10px 0 30px rgba(0,0,0,.15)}
 }
@@ -317,7 +331,7 @@ html{-webkit-text-size-adjust:100%}
 
   <main class="main">
     <section class="view" id="v-inicio"><div class="pad">
-      <div class="sec-h"><div><h2>Aplicaciones</h2><p>Elige una app para trabajar en ella sin salir de MSMIN.</p></div></div>
+      <div class="sec-h"><div><h2>Aplicaciones</h2></div></div>
       <div id="listErr"></div>
       <div class="cards" id="cards"></div>
     </div></section>
@@ -383,6 +397,9 @@ html{-webkit-text-size-adjust:100%}
     <div class="fld"><label for="fNombre">Nombre</label><input id="fNombre" placeholder="Ej: Inspección puente apilador 210-CV-03"></div>
     <div class="fld"><label for="fUrl">Enlace de la app web</label><input id="fUrl" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec">
       <small>En el proyecto de la app: Implementar &#8250; Gestionar implementaciones &#8250; copiar la URL de la aplicación web.</small></div>
+    <div class="fld"><label for="fIcono">Ícono</label><select id="fIcono">
+      <option value="">Iniciales del nombre</option><option value="rueda">Rueda de acero</option><option value="puente">Puente apilador</option>
+      <option value="tambor">Tambor aglomerador</option><option value="tolva">Tolva (plano 3D)</option><option value="pauta">Pauta / lista de chequeo</option></select></div>
     <div class="fld"><label for="fArea">Área / equipo</label><input id="fArea" placeholder="Ej: Puente apilador 210-CV-03"></div>
     <div class="fld"><label for="fDesc">Descripción</label><textarea id="fDesc" placeholder="Para qué sirve la app"></textarea></div>
     <div class="fld"><label for="fPlanilla">Enlace de su base de datos (opcional)</label><input id="fPlanilla" inputmode="url" placeholder="https://docs.google.com/spreadsheets/..."></div>
@@ -438,6 +455,101 @@ var CFG = {
 var sb = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'msmin.sesion' } });
 
 var S = { apps: [], usuarios: [], actual: null, view: 'inicio', email: '', rol: null, offline: false };
+/* Ilustraciones de las apps (SVG 96x96). Colores: acero claro/oscuro + acento de la app (currentColor). */
+var ILU = {
+  // Rueda de acero tipo ferroviaria: pestaña, banda de rodadura, alma con perforaciones, cubo y eje, sobre el riel.
+  rueda: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
+    '<defs><radialGradient id="gR" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#E4ECF3"/><stop offset=".6" stop-color="#9FB1C2"/><stop offset="1" stop-color="#5E7286"/></radialGradient></defs>' +
+    '<rect x="6" y="82" width="84" height="6" rx="1.5" fill="#5E7286"/><rect x="10" y="88" width="76" height="3" fill="#3B4D5F"/>' +
+    '<circle cx="48" cy="45" r="38" fill="#3B4D5F"/>' +
+    '<circle cx="48" cy="45" r="34" fill="url(#gR)"/>' +
+    '<circle cx="48" cy="45" r="27" fill="#7F93A7" stroke="#5E7286" stroke-width="1.5"/>' +
+    '<g fill="#3B4D5F">' +
+      [0, 60, 120, 180, 240, 300].map(function (a) { var r = a * Math.PI / 180; return '<circle cx="' + (48 + 17.5 * Math.cos(r)).toFixed(1) + '" cy="' + (45 + 17.5 * Math.sin(r)).toFixed(1) + '" r="4.6"/>'; }).join('') +
+    '</g>' +
+    '<circle cx="48" cy="45" r="10" fill="#C9D6E2" stroke="#5E7286" stroke-width="2"/>' +
+    '<circle cx="48" cy="45" r="4.5" fill="currentColor"/>' +
+    '</svg>',
+
+  // Puente apilador: viga reticulada sobre dos bogies en rieles, carro con descarga y pila de mineral.
+  puente: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
+    '<path d="M24 86 L48 58 L72 86 Z" fill="#8C6B4A"/><path d="M48 58 L60 72 L52 86 L34 86 Z" fill="#A9845E" opacity=".75"/>' +
+    '<rect x="4" y="88" width="88" height="3" fill="#3B4D5F"/>' +
+    '<rect x="6" y="26" width="84" height="14" fill="none" stroke="#C9D6E2" stroke-width="3"/>' +
+    '<path d="M6 40 L16 26 L26 40 L36 26 L46 40 L56 26 L66 40 L76 26 L86 40" fill="none" stroke="#9FB1C2" stroke-width="2.2"/>' +
+    '<rect x="4" y="22" width="88" height="4" rx="1" fill="#C9D6E2"/>' +
+    '<path d="M10 40 L8 80 M16 40 L18 80 M80 40 L78 80 M86 40 L88 80" stroke="#9FB1C2" stroke-width="3" stroke-linecap="round"/>' +
+    '<rect x="4" y="78" width="18" height="7" rx="2" fill="#5E7286"/><rect x="74" y="78" width="18" height="7" rx="2" fill="#5E7286"/>' +
+    '<circle cx="9" cy="86" r="2.6" fill="#3B4D5F"/><circle cx="17" cy="86" r="2.6" fill="#3B4D5F"/><circle cx="79" cy="86" r="2.6" fill="#3B4D5F"/><circle cx="87" cy="86" r="2.6" fill="#3B4D5F"/>' +
+    '<rect x="40" y="40" width="16" height="9" rx="1.5" fill="currentColor"/>' +
+    '<path d="M44 49 L48 56 L52 49 Z" fill="currentColor"/>' +
+    '<path d="M48 57 L48 60" stroke="#A9845E" stroke-width="2" stroke-dasharray="1.5 1.5"/>' +
+    '</svg>',
+
+  // Tambor aglomerador: cilindro inclinado con dos anillos de rodadura sobre polines y corona dentada.
+  tambor: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
+    '<defs><linearGradient id="gT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D6E2"/><stop offset=".45" stop-color="#9FB1C2"/><stop offset="1" stop-color="#5E7286"/></linearGradient></defs>' +
+    '<rect x="6" y="80" width="84" height="6" rx="1.5" fill="#3B4D5F"/>' +
+    '<g transform="rotate(-8 48 50)">' +
+      '<rect x="12" y="32" width="70" height="30" fill="url(#gT)"/>' +
+      '<ellipse cx="12" cy="47" rx="6" ry="15" fill="#7F93A7"/>' +
+      '<ellipse cx="82" cy="47" rx="6" ry="15" fill="#5E7286"/><ellipse cx="82" cy="47" rx="3.5" ry="9" fill="#2A3846"/>' +
+      '<rect x="24" y="29" width="7" height="36" rx="2" fill="#E4ECF3" stroke="#5E7286" stroke-width="1"/>' +
+      '<rect x="63" y="29" width="7" height="36" rx="2" fill="#E4ECF3" stroke="#5E7286" stroke-width="1"/>' +
+      '<rect x="44" y="28" width="6" height="38" rx="1.5" fill="currentColor"/>' +
+      '<path d="M44 31h6M44 35h6M44 39h6M44 43h6M44 47h6M44 51h6M44 55h6M44 59h6M44 63h6" stroke="#0B1A2C" stroke-width=".8" opacity=".55"/>' +
+    '</g>' +
+    '<circle cx="24" cy="73" r="5" fill="#5E7286" stroke="#3B4D5F" stroke-width="1.5"/><circle cx="36" cy="72" r="5" fill="#5E7286" stroke="#3B4D5F" stroke-width="1.5"/>' +
+    '<circle cx="62" cy="67" r="5" fill="#5E7286" stroke="#3B4D5F" stroke-width="1.5"/><circle cx="74" cy="66" r="5" fill="#5E7286" stroke="#3B4D5F" stroke-width="1.5"/>' +
+    '<path d="M20 80 L24 78 L40 78 L40 80 M58 80 L58 72 L78 71 L78 80" fill="#3B4D5F"/>' +
+    '<path d="M84 22 L92 22 L88 34 Z" fill="#8C6B4A"/>' +
+    '</svg>',
+
+  // Tolva Área 200 en 3D: buzón de planchas 7 columnas x 8 filas (A-H) + tolva inferior, proporciones del plano.
+  tolva: (function () {
+    // Plano: W 7300, H 10210, HT 7537, boca 2515-4749. Escala a ~0.0042.
+    var k = 0.0042, W = 7300 * k, H = 10210 * k, HT = 7537 * k, BL = 2515 * k, BR = 4749 * k;
+    var ox = 25, oy = 6, dx = 16, dy = -8; // origen de la cara frontal y fuga de la cara lateral
+    function P(x, y) { return (ox + x).toFixed(1) + ',' + (oy + y + 10).toFixed(1); }
+    function Q(x, y) { return (ox + x + dx).toFixed(1) + ',' + (oy + y + 10 + dy).toFixed(1); }
+    var s = '<svg viewBox="0 0 96 96" aria-hidden="true">';
+    // cara superior y lateral
+    s += '<polygon points="' + [P(0, 0), P(W, 0), Q(W, 0), Q(0, 0)].join(' ') + '" fill="#C9D6E2"/>';
+    s += '<polygon points="' + [P(W, 0), Q(W, 0), Q(W, H), P(W, H)].join(' ') + '" fill="#7F93A7"/>';
+    s += '<polygon points="' + [P(W, H), Q(W, H), Q(BR, H + HT), P(BR, H + HT)].join(' ') + '" fill="#5E7286"/>';
+    // cara frontal: buzón + tolva
+    s += '<polygon points="' + [P(0, 0), P(W, 0), P(W, H), P(BR, H + HT), P(BL, H + HT), P(0, H)].join(' ') + '" fill="#9FB1C2" stroke="#E4ECF3" stroke-width="1.4" stroke-linejoin="round"/>';
+    // grilla de sectores
+    var g = '';
+    for (var c = 1; c < 7; c++) g += 'M' + P(W * c / 7, 0) + ' L' + P(W * c / 7, H) + ' ';
+    for (var r = 1; r < 8; r++) g += 'M' + P(0, H * r / 8) + ' L' + P(W, H * r / 8) + ' ';
+    for (var t = 1; t < 5; t++) { var y = H + HT * t / 5, xl = BL * (y - H) / HT, xr = W - (W - BR) * (y - H) / HT; g += 'M' + P(xl, y) + ' L' + P(xr, y) + ' '; }
+    g += 'M' + P(W / 3, H) + ' L' + P(BL + (BR - BL) / 3, H + HT) + ' M' + P(2 * W / 3, H) + ' L' + P(BL + 2 * (BR - BL) / 3, H + HT);
+    s += '<path d="' + g + '" stroke="#3B4D5F" stroke-width=".8" fill="none" opacity=".8"/>';
+    // sectores marcados (como en la inspección)
+    s += '<circle cx="' + (ox + W * 4.5 / 7) + '" cy="' + (oy + 10 + H * 3.5 / 8) + '" r="2.6" fill="currentColor"/>';
+    s += '<circle cx="' + (ox + W * 1.5 / 7) + '" cy="' + (oy + 10 + H * 6.5 / 8) + '" r="2.6" fill="#F08A80"/>';
+    return s + '</svg>';
+  })(),
+
+  // Pautas de inspección: portapapeles con lista de chequeo.
+  pauta: '<svg viewBox="0 0 96 96" aria-hidden="true">' +
+    '<rect x="20" y="14" width="56" height="74" rx="6" fill="#9FB1C2"/>' +
+    '<rect x="25" y="20" width="46" height="63" rx="3" fill="#E4ECF3"/>' +
+    '<rect x="36" y="9" width="24" height="12" rx="3" fill="#5E7286"/>' +
+    '<g stroke-linecap="round" stroke-linejoin="round" fill="none">' +
+      '<path d="M31 35 l3 3 l6 -6 M31 51 l3 3 l6 -6" stroke="currentColor" stroke-width="3"/>' +
+      '<rect x="31" y="62" width="9" height="9" rx="1.5" stroke="#5E7286" stroke-width="2"/>' +
+      '<path d="M46 36h18M46 52h18M46 67h18" stroke="#5E7286" stroke-width="3"/>' +
+    '</g></svg>'
+};
+
+var ILU_N = 0;
+function ilustracion(a) {
+  var s = ILU[a.icono]; if (!s) return '';
+  var n = ++ILU_N; // ids únicos: un degradado dentro de un elemento oculto no se dibuja en los demás
+  return s.replace(/id="(g\w+)"/g, 'id="$1_' + n + '"').replace(/url\(#(g\w+)\)/g, 'url(#$1_' + n + ')');
+}
 var ICO = {
   ext: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
   bd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>'
@@ -554,7 +666,7 @@ function abrirShell() {
 
 /* ===== Datos ===== */
 function deSb(r) {
-  return { id: r.id, orden: r.orden, nombre: r.nombre || '', descripcion: r.descripcion || '', area: r.area || '', url: r.url || '', planilla_url: r.planilla_url || '', activo: r.activo === false ? 'NO' : 'SI' };
+  return { id: r.id, orden: r.orden, nombre: r.nombre || '', descripcion: r.descripcion || '', area: r.area || '', url: r.url || '', planilla_url: r.planilla_url || '', activo: r.activo === false ? 'NO' : 'SI', icono: r.icono || '' };
 }
 function cargar() {
   var pa = sb.from('portal_apps').select('*').order('orden').order('nombre').then(function (r) {
@@ -599,21 +711,17 @@ function pintar() {
 
   var vs = visibles();
   $('#sideApps').innerHTML = vs.map(function (a) {
-    return '<button class="nav-it" data-app="' + esc(a.id) + '"><span class="ic" style="background:' + color(a) + '">' + esc(sigla(a.nombre)) + '</span>' +
-      '<span class="tx"><b>' + esc(a.nombre) + '</b><span>' + esc(a.area || '') + '</span></span></button>';
+    var il = ilustracion(a);
+    return '<button class="nav-it" data-app="' + esc(a.id) + '">' + (il ? '<span class="ic ilu-mini" style="color:' + color(a) + '">' + il + '</span>' : '<span class="ic" style="background:' + color(a) + '">' + esc(sigla(a.nombre)) + '</span>') +
+      '<span class="tx"><b>' + esc(a.nombre) + '</b></span></button>';
   }).join('') || '<div class="note" style="padding:0 8px">Sin apps visibles.</div>';
 
   $('#cards').innerHTML = vs.map(function (a) {
-    return '<article class="card" style="--c:' + color(a) + '">' +
-      '<button class="card-main" data-app="' + esc(a.id) + '" aria-label="Abrir ' + esc(a.nombre) + '"><span class="ic">' + esc(sigla(a.nombre)) + '</span>' +
-        '<span class="tx"><h3>' + esc(a.nombre) + '</h3><span class="area">' + esc(a.area || '') + '</span>' + (a.descripcion ? '<span class="desc">' + esc(a.descripcion) + '</span>' : '') + '</span>' +
-        (a.url ? '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>' : '') + '</button>' +
-      (a.url
-        ? '<div class="acc"><a href="' + esc(a.url) + '" target="_blank" rel="noopener">' + ICO.ext + 'Abrir aparte</a>' +
-          (a.planilla_url ? '<a href="' + esc(a.planilla_url) + '" target="_blank" rel="noopener">' + ICO.bd + 'Base de datos</a>' : '') + '</div>'
-        : '<div class="acc"><span class="pend">Sin enlace todavía.' + (esAdmin() ? '' : ' Avísale al administrador.') + '</span>' +
-          (esAdmin() ? '<button data-edit="' + esc(a.id) + '">Agregar enlace</button>' : '') + '</div>') +
-      '</article>';
+    var il = ilustracion(a);
+    return '<button class="tile" data-app="' + esc(a.id) + '" style="--c:' + color(a) + '">' +
+      (il ? '<span class="ilu">' + il + '</span>' : '<span class="ilu sg">' + esc(sigla(a.nombre)) + '</span>') +
+      '<span class="tt">' + esc(a.nombre) + '</span>' +
+      (a.url ? '' : '<span class="sin">Sin enlace</span>') + '</button>';
   }).join('') || '<div class="empty">Todavía no hay apps.' + (esAdmin() ? ' Agrega la primera en Ajustes.' : '') + '</div>';
 
   if (esAdmin()) {
@@ -701,10 +809,10 @@ function ocupado(btns, on, txt) { btns.forEach(function (s) { $(s).disabled = on
 
 /* Apps (administrador) */
 function editarApp(id) {
-  var a = S.apps.filter(function (x) { return x.id === id; })[0] || { id: '', nombre: '', url: '', area: '', descripcion: '', planilla_url: '', orden: S.apps.length + 1, activo: 'SI' };
+  var a = S.apps.filter(function (x) { return x.id === id; })[0] || { id: '', nombre: '', url: '', area: '', descripcion: '', planilla_url: '', orden: S.apps.length + 1, activo: 'SI', icono: '' };
   $('#pTitulo').textContent = a.id ? 'Editar app' : 'Agregar app';
   $('#fId').value = a.id; $('#fNombre').value = a.nombre; $('#fUrl').value = a.url; $('#fArea').value = a.area;
-  $('#fDesc').value = a.descripcion; $('#fPlanilla').value = a.planilla_url; $('#fOrden').value = a.orden; $('#fActivo').value = a.activo;
+  $('#fDesc').value = a.descripcion; $('#fPlanilla').value = a.planilla_url; $('#fOrden').value = a.orden; $('#fActivo').value = a.activo; $('#fIcono').value = a.icono || '';
   $('#pEliminar').style.display = a.id ? '' : 'none';
   abrirPanel('#pApp');
 }
@@ -714,7 +822,7 @@ function siguienteId() {
 }
 $('#pGuardar').addEventListener('click', function () {
   var o = { nombre: $('#fNombre').value.trim(), url: $('#fUrl').value.trim(), area: $('#fArea').value.trim(), descripcion: $('#fDesc').value.trim(),
-    planilla_url: $('#fPlanilla').value.trim(), orden: parseInt($('#fOrden').value, 10) || (S.apps.length + 1), activo: $('#fActivo').value !== 'NO' };
+    planilla_url: $('#fPlanilla').value.trim(), orden: parseInt($('#fOrden').value, 10) || (S.apps.length + 1), activo: $('#fActivo').value !== 'NO', icono: $('#fIcono').value || null };
   if (!o.nombre) { toast('Falta el nombre de la app', true); return; }
   if (o.url && !/^https:\/\//i.test(o.url)) { toast('El enlace debe partir con https://', true); return; }
   ['area', 'descripcion', 'url', 'planilla_url'].forEach(function (k) { if (!o[k]) o[k] = null; });
