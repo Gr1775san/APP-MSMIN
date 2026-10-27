@@ -122,17 +122,17 @@
   };
 
   var CSS_PDF =
-    'body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#17232B;margin:0}' +
+    '*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:14mm 12mm}body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#17232B;margin:0}' +
     '.cab{width:100%;border-collapse:collapse;border-bottom:2.5pt solid #E8A317;margin-bottom:8pt}.cab td{vertical-align:middle;padding:0 0 6pt}' +
     'h1{font-size:15pt;margin:0;color:#1F3A4D}.sub{font-size:9.5pt;color:#4A5A66;margin-top:2pt}.der{text-align:right;font-size:8.5pt;color:#4A5A66}' +
-    'h2{font-size:11pt;color:#FFFFFF;background:#1F3A4D;padding:4pt 7pt;margin:14pt 0 6pt}' +
-    'h3{font-size:10.5pt;color:#1F3A4D;margin:10pt 0 4pt;border-bottom:1pt solid #C9D3DA;padding-bottom:2pt}' +
+    'h2{font-size:11pt;color:#1F3A4D;background:#E8EEF2;border-left:4pt solid #E8A317;padding:4pt 7pt;margin:14pt 0 6pt;page-break-after:avoid}' +
+    'h3{font-size:10.5pt;color:#1F3A4D;margin:10pt 0 4pt;border-bottom:1pt solid #C9D3DA;padding-bottom:2pt;page-break-after:avoid}tr,img{page-break-inside:avoid}' +
     'table.t{width:100%;border-collapse:collapse;table-layout:fixed;margin:2pt 0 8pt}.t th{background:#E8EEF2;color:#1F3A4D;font-size:8pt;text-align:left;padding:3pt 4pt;border:0.5pt solid #C9D3DA}' +
     '.t td{font-size:8pt;padding:3pt 4pt;border:0.5pt solid #C9D3DA;vertical-align:top}.t tr.b td{background:#F6F8FA}' +
     'table.fi{width:100%;border-collapse:collapse;margin:0 0 8pt}.fi th{text-align:left;font-size:8pt;color:#6B7A83;font-weight:normal;padding:2.5pt 6pt 2.5pt 0;width:17%;vertical-align:top}.fi td{font-size:9pt;font-weight:bold;padding:2.5pt 10pt 2.5pt 0;width:33%;vertical-align:top}' +
     'table.kp{width:100%;border-collapse:separate;border-spacing:4pt;margin:2pt 0 6pt}.kp td{border:0.5pt solid #C9D3DA;border-top:2.5pt solid #2B4F66;text-align:center;padding:5pt 3pt;font-size:8pt;color:#4A5A66;background:#FFFFFF}.kp b{display:block;font-size:16pt;color:#1F3A4D;margin-bottom:1pt}' +
     '.kp b.crit,.crit{color:#B3261E}.kp b.amb{color:#9A6100}.kp b.ok{color:#1E6B2D}' +
-    '.s{font-weight:bold;padding:1pt 3pt}.s.crit{background:#F8D7DA;color:#8A1C24}.s.amb{background:#FFF1D6;color:#7A5200}.s.ok{background:#DFF2E1;color:#1E6B2D}' +
+    '.s{font-weight:bold;padding:1pt 3pt;border:0.5pt solid transparent}.s.crit{border-color:#E7A7AD}.s.amb{border-color:#EBCB8B}.s.ok{border-color:#A9D6B1}.s.crit{background:#F8D7DA;color:#8A1C24}.s.amb{background:#FFF1D6;color:#7A5200}.s.ok{background:#DFF2E1;color:#1E6B2D}' +
     'table.fo{width:100%;border-collapse:collapse}.fo td{width:50%;vertical-align:top;padding:4pt;text-align:center}.pf{font-size:7.5pt;color:#4A5A66;margin-top:2pt}' +
     '.nada{color:#6B7A83;font-style:italic;margin:2pt 0 8pt}.nota{font-size:8pt;color:#6B7A83}.img{text-align:center;margin:4pt 0 8pt}' +
     '.pie{margin-top:16pt;font-size:7.5pt;color:#6B7A83;border-top:0.5pt solid #C9D3DA;padding-top:4pt}';
