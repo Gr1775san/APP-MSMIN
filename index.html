@@ -264,6 +264,29 @@ html{-webkit-text-size-adjust:100%}
   .toast{bottom:28px}
   .panel{inset:0 0 0 auto;width:min(520px,100vw);box-shadow:-10px 0 30px rgba(0,0,0,.15)}
 }
+
+/* ===== Computadora ===== */
+@media (min-width:960px){
+  .side{width:264px;transition:width .15s ease}
+  .nav-it .tx b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25}
+  .nav-it .ilu-mini svg{width:30px;height:30px}
+  #v-inicio .pad{max-width:1240px}
+  .cards{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+  .tile{min-height:236px;padding:24px 14px 20px;gap:16px}
+  .tile:hover{background:var(--surface2);transform:translateY(-2px);box-shadow:0 2px 4px rgba(0,0,0,.35),0 12px 28px rgba(0,0,0,.35)}
+  .tile .ilu{width:132px;height:132px;border-radius:30px}
+  .tile .ilu svg{width:116px;height:116px}
+  .tile .ilu.sg{font-size:38px}
+  .tile .tt{font-size:16.5px;max-width:220px}
+  #v-ajustes .pad{max-width:980px}
+  /* Con una app abierta, el menú lateral se reduce a íconos para dar espacio a la app */
+  body.en-app .side{width:76px;padding:12px 8px}
+  body.en-app .side h4,body.en-app .side .tx{display:none}
+  body.en-app .nav-it{justify-content:center;padding:9px 0}
+  body.en-app .nav-it .ic{width:42px;height:42px}
+  body.en-app .nav-it .ilu-mini svg{width:36px;height:36px}
+}
+@media (min-width:960px) and (prefers-reduced-motion:reduce){ .side{transition:none} .tile:hover{transform:none} }
 </style>
 </head>
 <body>
@@ -322,11 +345,11 @@ html{-webkit-text-size-adjust:100%}
 
 <div class="shell" id="shell" hidden>
   <aside class="side">
-    <button class="nav-it" data-go="inicio"><span class="ic" style="background:var(--btn)">&#8962;</span><span class="tx"><b>Inicio</b><span>Todas las aplicaciones</span></span></button>
+    <button class="nav-it" data-go="inicio" title="Inicio"><span class="ic" style="background:var(--btn)">&#8962;</span><span class="tx"><b>Inicio</b><span>Todas las aplicaciones</span></span></button>
     <h4>Aplicaciones</h4>
     <div id="sideApps"></div>
     <h4>Cuenta</h4>
-    <button class="nav-it" data-go="ajustes"><span class="ic" style="background:#4A6075">&#9881;</span><span class="tx"><b>Ajustes</b><span id="sideAjTx">Mi cuenta</span></span></button>
+    <button class="nav-it" data-go="ajustes" title="Ajustes"><span class="ic" style="background:#4A6075">&#9881;</span><span class="tx"><b>Ajustes</b><span id="sideAjTx">Mi cuenta</span></span></button>
   </aside>
 
   <main class="main">
@@ -712,7 +735,7 @@ function pintar() {
   var vs = visibles();
   $('#sideApps').innerHTML = vs.map(function (a) {
     var il = ilustracion(a);
-    return '<button class="nav-it" data-app="' + esc(a.id) + '">' + (il ? '<span class="ic ilu-mini" style="color:' + color(a) + '">' + il + '</span>' : '<span class="ic" style="background:' + color(a) + '">' + esc(sigla(a.nombre)) + '</span>') +
+    return '<button class="nav-it" data-app="' + esc(a.id) + '" title="' + esc(a.nombre) + '">' + (il ? '<span class="ic ilu-mini" style="color:' + color(a) + '">' + il + '</span>' : '<span class="ic" style="background:' + color(a) + '">' + esc(sigla(a.nombre)) + '</span>') +
       '<span class="tx"><b>' + esc(a.nombre) + '</b></span></button>';
   }).join('') || '<div class="note" style="padding:0 8px">Sin apps visibles.</div>';
 
