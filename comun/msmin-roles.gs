@@ -122,7 +122,9 @@ function msminSinAcceso_(msg) {
 /** Agrega a la página de la app: datos de la sesión, el control de llamadas y el ocultado de botones según el rol */
 function msminEnvolver_(out, s, aviso) {
   const oc = (typeof MSMIN_OCULTAR !== 'undefined' && MSMIN_OCULTAR) || {};
-  const ocultar = s.rol === 'visor' ? [oc.visor, oc.usuario].filter(Boolean).join(',') : s.rol === 'usuario' ? (oc.usuario || '') : '';
+  // comunes: el visor no descarga informes; usuario y visor no abren las bases de datos (planillas)
+  const baseVisor = '.msmin-inf,#nameBanner', baseUsuario = 'a[href*="docs.google.com/spreadsheets"],#sheetLink';
+  const ocultar = s.rol === 'visor' ? [baseVisor, baseUsuario, oc.visor, oc.usuario].filter(Boolean).join(',') : s.rol === 'usuario' ? [baseUsuario, oc.usuario].filter(Boolean).join(',') : '';
   const datos = JSON.stringify({ rol: s.rol, rolTxt: MSMIN_ROL_TXT[s.rol], email: s.email, nombre: s.nombre, token: s.token, aviso: aviso || '' }).replace(/</g, '\\u003c');
   const extra = s.rol === 'visor' ? (oc.cssVisor || '') + (oc.cssUsuario || '') : s.rol === 'usuario' ? (oc.cssUsuario || '') : '';
   const head = '<script>window.MSMIN=' + datos + ';</script>' +
@@ -153,8 +155,9 @@ const MSMIN_ROLES_CLIENTE = '<script>(function () {' +
   /* 2. La sesión queda en la dirección (al recargar sigue dentro) y el pase de un uso desaparece */
   'try { if (M.token && google.script.history) google.script.history.replace(null, { s: M.token }); } catch (e) { }' +
   /* 3. Los formularios llevan la sesión */
-  'document.addEventListener("submit", function (ev) { var f = ev.target; if (!f || f.tagName !== "FORM") return;' +
-  '  var i = f.querySelector("input[name=_msmin]"); if (!i) { i = document.createElement("input"); i.type = "hidden"; i.name = "_msmin"; f.appendChild(i); } i.value = M.token || ""; }, true);' +
+  'function conToken(f) { if (!f || f.tagName !== "FORM") return; var i = f.querySelector("[name=_msmin]"); if (!i) { i = document.createElement("input"); i.type = "hidden"; i.name = "_msmin"; f.appendChild(i); } i.value = M.token || ""; }' +
+  'document.addEventListener("submit", function (ev) { conToken(ev.target); }, true);' +
+  'var _sub = HTMLFormElement.prototype.submit; HTMLFormElement.prototype.submit = function () { conToken(this); return _sub.call(this); };' +
   /* 4. Marca del rol y aviso */
   'function marcar() { document.documentElement.setAttribute("data-rol", M.rol || "");' +
   '  if (M.rol && M.rol !== "admin" && !document.getElementById("msmin-rol")) {' +

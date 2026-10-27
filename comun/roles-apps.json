@@ -1,0 +1,34 @@
+{
+  "ruedas": {
+    "permisos": { "msminInformePdf": "usuario" },
+    "ocultar": {
+      "visor": ".tab[data-v=registrar],.bnav button[data-v=registrar],#v-registrar,#fab,#bImp,#bCsv,#pFoot",
+      "cssVisor": ".bnav{grid-template-columns:repeat(4,1fr)!important}",
+      "usuario": "#pDel,#bImp"
+    },
+    "post": "function msminNivelPost_(e) { const a = (e && e.parameter && e.parameter.accion) || ''; return a === 'eliminar' || a === 'importar' ? 'admin' : 'usuario'; }"
+  },
+  "puente": {
+    "permisos": { "msminInformePdf": "usuario" },
+    "ocultar": { "visor": "#fab,#fab2,#pEdit,#pFoot,.quick,#addPh,[data-del]", "usuario": "#bDel,[data-del]" },
+    "post": "function msminNivelPost_(e) { const a = (e && e.parameter && e.parameter.accion) || ''; return a === 'eliminar' || a === 'quitarFoto' ? 'admin' : 'usuario'; }"
+  },
+  "tambores": {
+    "permisos": { "msminInformePdf": "usuario" },
+    "ocultar": { "visor": "#fab,#fab2,#pEdit,#pFoot,.quick,#addPh,[data-del]", "usuario": "#bDel,[data-del]" },
+    "post": "function msminNivelPost_(e) { const a = (e && e.parameter && e.parameter.accion) || ''; return a === 'eliminar' || a === 'quitarFoto' ? 'admin' : 'usuario'; }"
+  },
+  "tolvas": {
+    "permisos": { "guardarHallazgo": "usuario", "eliminarHallazgo": "admin", "msminInformePdf": "usuario" },
+    "ocultar": { "visor": "#btnNuevo,[data-nuevo],#hGuardar", "usuario": "#hBorrar" }
+  },
+  "pautas": {
+    "permisos": { "obtenerDatosIniciales": "visor", "obtenerInspeccion": "visor", "obtenerFotos": "visor", "listarHallazgos": "visor", "listarInformes": "visor", "vistaInforme": "visor",
+      "guardarInspeccion": "usuario", "subirFoto": "usuario", "guardarHallazgo": "usuario", "generarPdf": "usuario" },
+    "ocultar": { "visor": "#btnGuardar,#hzGo,#fabHz,#btnPdf,#btnDescargar,#btnDrive,input[type=file],label[for][class*=foto]", "usuario": "" }
+  },
+  "flash": {
+    "permisos": { "getInitialData": "visor", "guardarReporte": "usuario" },
+    "ocultar": { "visor": "#btnSubmit,#btnCamara,#btnArchivo,#btnSync,#btnPend,.foto button", "usuario": "" }
+  }
+}
