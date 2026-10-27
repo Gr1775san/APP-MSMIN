@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <base target="_top">
   <title>Reporte Flash - Desviaciones</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#07111D">
   <style>
     :root {
       --teal: #106470; --teal2: #0098aa; --gris: #36424a; --naranja: #e55302;
@@ -77,6 +80,45 @@
     .pend div.acc { display: flex; gap: 6px; flex-shrink: 0; }
     .mini { border: 1px solid var(--border); background: #fff; border-radius: 6px; padding: 6px 9px; font-size: .8rem; cursor: pointer; color: var(--text); }
     .mini.rojo { color: var(--err); border-color: var(--err); }
+
+    /* ===== Tema MSMIN (mismos colores que las demás apps) ===== */
+    :root {
+      --teal: #E8A317; --teal2: #E8A317; --gris: #12253B; --naranja: #E8A317;
+      --bg: #0B1A2C; --card: #12253B; --text: #E9EFF5; --muted: #8399AE; --border: #244260;
+      --ok: #1E6B2D; --err: #8A1C24;
+    }
+    body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding-bottom: 40px; }
+    .brand { background: #07111D; border-bottom: 1px solid #244260; padding: calc(env(safe-area-inset-top) + 10px) 12px 12px; position: relative; }
+    .brand img { background: #FFFFFF; border-radius: 10px; padding: 4px 10px; height: 50px; box-sizing: content-box; }
+    .brand h1 { color: #F4F6F8; font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif; font-size: 1.08rem; font-weight: 700; margin-top: 10px; }
+    .brand::after { content: ""; display: block; width: 56px; height: 3px; background: #E8A317; border-radius: 2px; margin: 8px auto 0; }
+    .status-bar { background: #12253B; border: 1px solid #244260; color: #B4C3D2; }
+    .status-online { color: #7FD69A; } .status-offline { color: #F08A80; }
+    .pend-btn { border-color: #244260; color: #E9EFF5; background: #183049; }
+    .seccion { background: #183049; color: #FFE2A6; border: 1px solid #244260; border-bottom: 0; border-left: 4px solid #E8A317; letter-spacing: .04em; }
+    .card { background: #12253B; border-color: #244260; box-shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.28); }
+    label { color: #B4C3D2; }
+    .ayuda { color: #8399AE; }
+    input, select, textarea { background: #183049; color: #E9EFF5; border-color: #244260; border-radius: 10px; min-height: 44px; }
+    input::placeholder, textarea::placeholder { color: #6F86A0; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #E8A317; border-color: #E8A317; }
+    input[readonly] { background: #0F2033; color: #B4C3D2; border-style: dashed; }
+    input[type="datetime-local"] { color-scheme: dark; }
+    select option { background: #12253B; color: #E9EFF5; }
+    .btn { background: #E8A317; color: #2A1B00; border-radius: 12px; letter-spacing: .02em; }
+    .btn:disabled { background: #3B4D5F; color: #8399AE; }
+    .btn-sec { background: #183049; color: #E9EFF5; border: 1px solid #244260; border-radius: 10px; }
+    .btn-sec:disabled { color: #6F86A0; border-color: #244260; }
+    .foto { background: #183049; border-color: #244260; }
+    #toast { background: #12253B; border: 1px solid #244260; }
+    #toast.ok { background: #1E6B2D; } #toast.err { background: #8A1C24; }
+    .panel { background: #12253B; border-color: #244260; color: #E9EFF5; }
+    .panel h3 { color: #FFE2A6; }
+    .pend { border-top-color: #1D3753; }
+    .pend small { color: #F08A80; }
+    .mini { background: #183049; border-color: #244260; color: #E9EFF5; }
+    .mini.rojo { color: #F08A80; border-color: rgba(240,138,128,.6); }
+    .msmin-volver.flota { top: calc(env(safe-area-inset-top) + 14px); }
   </style>
 </head>
 <body>
