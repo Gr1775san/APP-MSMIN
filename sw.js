@@ -1,7 +1,7 @@
 /* Service worker de Estructural MSMIN: deja la app abrible sin señal.
    Los datos (Supabase) nunca se guardan aquí; la lista de apps se guarda aparte en el teléfono. */
-const VERSION = 'msmin-v7';
-const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/logo.png', './icons/logo-animado.jpg'];
+const VERSION = 'msmin-v8';
+const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/logo.png', './icons/logo-animado.jpg', './icons/fondo-inicio-movil.jpg', './icons/fondo-inicio.jpg'];
 const CDN = ['https://cdn.jsdelivr.net/', 'https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 
 self.addEventListener('install', (e) => {
