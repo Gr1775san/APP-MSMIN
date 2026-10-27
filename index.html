@@ -301,6 +301,14 @@ html{-webkit-text-size-adjust:100%}
 #v-inicio .tile:active,#v-inicio .tile:hover{background:rgba(24,48,73,.86)}
 #v-inicio .tile .ilu{background:radial-gradient(circle at 50% 30%,rgba(31,59,88,.95) 0%,rgba(15,32,52,.9) 75%)}
 #v-inicio .tile .tt{text-shadow:0 1px 6px rgba(0,0,0,.5)}
+
+/* Ajuste: dónde se abren las apps */
+.opt{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);cursor:pointer}
+.opt input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--amber);flex:none}
+.opt b{display:block;font-size:14px}
+.opt small{display:block;color:var(--ink3);font-size:12.5px;line-height:1.45;margin-top:2px}
+body.sin-visor #navApp{display:none}
+body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
 </style>
 </head>
 <body>
@@ -403,6 +411,7 @@ html{-webkit-text-size-adjust:100%}
           <button class="btn dan" id="bSalir">Cerrar sesión</button>
         </div>
         <p class="note" id="instNota"></p>
+        <label class="opt" for="cVisor"><input type="checkbox" id="cVisor"><span><b>Abrir las apps dentro de MSMIN</b><small>Si al abrir una app aparece "Error 401", déjalo desactivado: cada app se abre en su propia pestaña y funciona siempre.</small></span></label>
       </div>
 
       <div id="adminZona" hidden>
@@ -716,6 +725,11 @@ function cargar() {
 function recargar() { return cargar().then(pintar).catch(function (e) { toast(msgErr(e), true); }); }
 
 /* ===== Vista ===== */
+function visorDentro() { return lsGet('msmin.visor') === true; }
+function aplicarVisor() {
+  document.body.classList.toggle('sin-visor', !visorDentro());
+  var c = document.getElementById('cVisor'); if (c) c.checked = visorDentro();
+}
 function ir(v, desdeHist) {
   if (v === 'app' && !S.actual) v = 'inicio';
   S.view = v;
@@ -787,6 +801,13 @@ function abrir(id) {
   var a = S.apps.filter(function (x) { return x.id === id; })[0];
   if (!a) return;
   if (!a.url) { if (esAdmin()) editarApp(a.id); else toast('Esta app todavía no tiene enlace', true); return; }
+  if (!visorDentro()) {
+    // En su propia pestaña Google reconoce la sesión siempre (dentro de otra página falla con varias cuentas o sin cookies de terceros)
+    var w = window.open(a.url, '_blank');
+    if (w) { try { w.opener = null; } catch (e) {} }
+    else toast('El navegador bloqueó la pestaña nueva. Permite las ventanas emergentes para este sitio.', true);
+    return;
+  }
   var cambia = !S.actual || S.actual.id !== a.id;
   S.actual = a;
   $('#vTitulo').textContent = a.nombre;
@@ -1028,6 +1049,14 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   });
 }
 window.addEventListener('online', function () { if (S.offline) entrar().catch(function () {}); });
+
+/* ===== Dónde se abren las apps ===== */
+aplicarVisor();
+$('#cVisor').addEventListener('change', function () {
+  lsSet('msmin.visor', this.checked); aplicarVisor();
+  if (!this.checked && S.actual) { S.actual = null; $('#frame').removeAttribute('src'); pintar(); }
+  toast(this.checked ? 'Las apps se abrirán dentro de MSMIN' : 'Las apps se abrirán en su propia pestaña');
+});
 
 /* ===== Logo animado ===== */
 (function () {
