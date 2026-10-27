@@ -1,0 +1,37 @@
+
+<!-- MSMIN: botón para volver al menú de Aplicaciones (igual en todas las apps) -->
+<style>
+.msmin-volver{display:inline-flex;align-items:center;gap:6px;flex:none;height:38px;padding:0 14px 0 9px;margin-right:4px;border-radius:999px;border:1px solid rgba(232,163,23,.6);background:rgba(232,163,23,.15);color:#F3C35B;font:600 13.5px/1 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.msmin-volver:hover{background:rgba(232,163,23,.26)}
+.msmin-volver:focus-visible{outline:2px solid #E8A317;outline-offset:2px}
+.msmin-volver svg{width:18px;height:18px;flex:none}
+.msmin-volver.flota{position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:10px;z-index:9999;background:#12253B;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+@media (max-width:560px){.msmin-volver{padding:0 10px 0 7px}.msmin-volver .tx{display:none}}
+</style>
+<script>
+(function () {
+  var MENU = 'https://gr1775san.github.io/APP-MSMIN/';
+  function irMenu() {
+    var a = document.createElement('a'); a.href = MENU; a.target = '_top'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+  }
+  function volver() {
+    // Vuelve a la página anterior (el menú desde donde se abrió la app); si la app se abrió directo, va al menú.
+    var sigue = true;
+    window.addEventListener('pagehide', function () { sigue = false; });
+    try { history.back(); } catch (e) { irMenu(); return; }
+    setTimeout(function () { if (sigue) irMenu(); }, 800);
+  }
+  function poner() {
+    if (document.querySelector('.msmin-volver')) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'msmin-volver'; b.title = 'Volver al menú de aplicaciones'; b.setAttribute('aria-label', 'Volver al menú de aplicaciones');
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span class="tx">Aplicaciones</span>';
+    b.addEventListener('click', volver);
+    var h = document.querySelector('header.top, header.brand');
+    var c = h ? (h.querySelector('.top-in') || h) : null;
+    if (c) c.insertBefore(b, c.firstChild); else { b.classList.add('flota'); document.body.appendChild(b); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
+})();
+</script>
