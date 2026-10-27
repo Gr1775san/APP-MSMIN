@@ -14,8 +14,12 @@
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cklbhuqjhsxvtcdwerxr.supabase.co" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="dns-prefetch" href="https://script.googleusercontent.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 :root{
   --bg:#0B1A2C;--surface:#12253B;--surface2:#183049;--ink:#E9EFF5;--ink2:#B4C3D2;--ink3:#8399AE;
@@ -309,6 +313,16 @@ html{-webkit-text-size-adjust:100%}
 .opt small{display:block;color:var(--ink3);font-size:12.5px;line-height:1.45;margin-top:2px}
 body.sin-visor #navApp{display:none}
 body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
+
+/* Aviso al abrir una app (mientras Google prepara la página) */
+.abriendo{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(7,17,29,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.abriendo>div{text-align:center;color:var(--ink2);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 24px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);max-width:min(320px,86vw)}
+.abriendo b{color:var(--ink);font:600 16px/1.3 "IBM Plex Sans Condensed",sans-serif}
+.abriendo .spin{margin:0 0 4px}
+/* Menos trabajo para el teléfono */
+#v-inicio .tile{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(18,37,59,.86)}
+@media (min-width:960px){ #v-inicio .tile{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(18,37,59,.72)} }
+.view{contain:layout paint}
 </style>
 </head>
 <body>
@@ -489,6 +503,7 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
 </aside>
 
 <div class="toast" id="toast"></div>
+<div class="abriendo" id="abriendo" hidden role="status"><div><div class="spin"></div><span>Abriendo</span><b></b></div></div>
 
 <script>
 /* ===== Configuración =====
@@ -683,13 +698,20 @@ function entrar() {
     var ses = r.data && r.data.session;
     if (!ses) { mostrarGate(false); return; }
     S.email = (ses.user && ses.user.email) || '';
-    return sb.rpc('portal_rol').then(function (q) {
+    // Rol y lista de apps se piden al mismo tiempo (la base solo entrega las apps si la cuenta tiene acceso)
+    var pApps = sb.from('portal_apps').select('*').order('orden').order('nombre');
+    return Promise.all([sb.rpc('portal_rol'), pApps]).then(function (rr) {
+      var q = rr[0], ra = rr[1];
       if (q.error) throw q.error;
       S.rol = q.data || null;
-      if (!S.rol) { mostrarGate(true, 'La cuenta ' + S.email + ' no está en el equipo o fue bloqueada. Pide acceso al administrador.'); return; }
+      if (!S.rol) { lsDel(CFG.CACHE); mostrarGate(true, 'La cuenta ' + S.email + ' no está en el equipo o fue bloqueada. Pide acceso al administrador.'); return; }
+      if (ra.error) throw ra.error;
       S.offline = false;
       lsSet('msmin.rol', { email: S.email, rol: S.rol });
-      return cargar().then(abrirShell);
+      S.apps = ra.data.map(deSb); lsSet(CFG.CACHE, S.apps); $('#listErr').innerHTML = '';
+      var yaVisible = !$('#shell').hidden;
+      if (yaVisible) pintar(); else abrirShell();
+      if (esAdmin()) sb.from('portal_usuarios').select('*').order('rol').order('email').then(function (r) { if (!r.error) { S.usuarios = r.data; pintar(); } });
     }).catch(function (e) {
       // Sin señal: si este teléfono ya entró antes, se abre con lo guardado
       var c = lsGet(CFG.CACHE), r2 = lsGet('msmin.rol');
@@ -725,6 +747,13 @@ function cargar() {
 function recargar() { return cargar().then(pintar).catch(function (e) { toast(msgErr(e), true); }); }
 
 /* ===== Vista ===== */
+function abriendo(a) {
+  var o = $('#abriendo');
+  o.querySelector('b').textContent = a.nombre;
+  o.hidden = false;
+  clearTimeout(o._t); o._t = setTimeout(function () { o.hidden = true; }, 12000);
+}
+window.addEventListener('pageshow', function () { var o = document.getElementById('abriendo'); if (o) o.hidden = true; });
 function visorDentro() { return lsGet('msmin.visor') === true; }
 function aplicarVisor() {
   document.body.classList.toggle('sin-visor', !visorDentro());
@@ -805,6 +834,7 @@ function abrir(id) {
     // Se abre en esta misma pestaña: Google reconoce la sesión (dentro de un marco falla con varias cuentas
     // o sin cookies de terceros) y el botón Atrás del teléfono o del navegador vuelve a MSMIN.
     lsSet('msmin.ultimaApp', a.id);
+    abriendo(a);
     location.assign(a.url);
     return;
   }
@@ -1069,7 +1099,13 @@ $('#cVisor').addEventListener('change', function () {
 
 /* ===== Inicio ===== */
 sb.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT' && !$('#shell').hidden) mostrarGate(false); });
-entrar().catch(function (e) { mostrarGate(false); gMsg(msgErr(e)); });
+// Si este equipo ya entró antes, el menú aparece al instante con la última lista y se actualiza en segundo plano
+(function () {
+  var c = lsGet(CFG.CACHE), r2 = lsGet('msmin.rol'), ses = lsGet('msmin.sesion');
+  var mail = ses && (ses.user ? ses.user.email : (ses.currentSession && ses.currentSession.user && ses.currentSession.user.email));
+  if (c && c.length && r2 && mail && r2.email === mail) { S.email = mail; S.rol = r2.rol; S.apps = c; abrirShell(); }
+})();
+entrar().catch(function (e) { if ($('#shell').hidden) { mostrarGate(false); gMsg(msgErr(e)); } });
 </script>
 </body>
 </html>
