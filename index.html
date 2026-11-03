@@ -323,6 +323,12 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
 #v-inicio .tile{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(18,37,59,.86)}
 @media (min-width:960px){ #v-inicio .tile{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);background:rgba(18,37,59,.72)} }
 .view{contain:layout paint}
+/* Ver / ocultar contraseña */
+.pw-wrap{position:relative;display:block}
+.fld .pw-wrap input{padding-right:46px}
+.pw-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:8px;color:var(--ink3);cursor:pointer;padding:0}
+.pw-toggle:hover,.pw-toggle:focus-visible{color:var(--ink)}
+.pw-toggle svg{width:20px;height:20px}
 </style>
 </head>
 <body>
@@ -1187,6 +1193,30 @@ sb.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT' && !$('#shell'
   if (c && c.length && r2 && mail && r2.email === mail) { S.email = mail; S.rol = r2.rol; S.apps = c; abrirShell(); }
 })();
 entrar().catch(function (e) { if ($('#shell').hidden) { mostrarGate(false); gMsg(msgErr(e)); } });
+
+/* Ver / ocultar contraseña en todos los campos de contraseña */
+(function () {
+  var OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var OJO_NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  function poner(inp) {
+    if (inp.dataset.pw) return; inp.dataset.pw = '1';
+    var w = document.createElement('span'); w.className = 'pw-wrap';
+    inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'pw-toggle';
+    function pintar() {
+      var visible = inp.type === 'text', t = visible ? 'Ocultar contraseña' : 'Mostrar contraseña';
+      b.innerHTML = visible ? OJO_NO : OJO; b.title = t; b.setAttribute('aria-label', t); b.setAttribute('aria-pressed', visible);
+    }
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    b.addEventListener('click', function () { inp.type = inp.type === 'password' ? 'text' : 'password'; pintar(); inp.focus(); });
+    w.appendChild(b); pintar();
+  }
+  document.querySelectorAll('input[type="password"]').forEach(poner);
+  // Al cerrar sesión o cambiar de pantalla, vuelve a ocultar
+  document.addEventListener('submit', function () {
+    document.querySelectorAll('input[data-pw]').forEach(function (i) { if (i.type === 'text') i.parentNode.querySelector('.pw-toggle').click(); });
+  }, true);
+})();
 </script>
 </body>
 </html>
