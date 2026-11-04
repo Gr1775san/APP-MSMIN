@@ -338,7 +338,7 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
 <!-- ============ ACCESO ============ -->
 <section class="gate" id="gate" hidden>
   <div class="brand">
-    <div class="logo-card vid"><video autoplay muted loop playsinline preload="auto" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></div>
+    <div class="logo-card vid"><video autoplay muted loop playsinline preload="metadata" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></div>
     <h1>Estructural MSMIN</h1>
     <p>Ingeniería de mantenimiento · Contrato 4600030865</p>
   </div>
@@ -379,7 +379,7 @@ body.sin-visor .bnav{grid-template-columns:repeat(2,1fr)}
 
 <!-- ============ APP ============ -->
 <header class="top" id="top" hidden>
-  <span class="logo-vid"><video autoplay muted loop playsinline preload="auto" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></span>
+  <span class="logo-vid"><video autoplay muted loop playsinline preload="metadata" poster="icons/logo-animado.jpg" aria-label="msmin by SGS"><source src="icons/logo-animado.webm" type="video/webm"><source src="icons/logo-animado.mp4" type="video/mp4"></video></span>
   <div class="ttl"><h1>Estructural MSMIN</h1><small>Ingeniería de mantenimiento · Contrato 4600030865</small></div>
   <button class="user" id="tUser" data-go="ajustes"></button>
   <span class="offline" id="offline" hidden>Sin conexión · lista guardada</span>
@@ -725,6 +725,7 @@ function mostrarGate(sinAcceso, texto) {
   $('#gForm').hidden = !!sinAcceso;
   $('#gSinAcceso').hidden = !sinAcceso;
   if (texto) $('#gSinAccesoTx').textContent = texto;
+  videosVisibles();
 }
 $('#sIngresar').addEventListener('click', function () { modoGate('ingresar'); });
 $('#sActivar').addEventListener('click', function () { modoGate('activar'); });
@@ -798,6 +799,7 @@ function abrirShell() {
   $('#loading').hidden = true; $('#gate').hidden = true;
   history.replaceState({ v: 'inicio' }, ''); S.view = 'inicio';
   ['#top', '#shell', '#bnav'].forEach(function (s) { $(s).hidden = false; });
+  videosVisibles();
   pintar();
   var q = new URLSearchParams(location.search).get('app');
   if (q) { q = q.toLowerCase(); var m = S.apps.filter(function (a) { return a.id.toLowerCase() === q || a.nombre.toLowerCase().indexOf(q) >= 0; })[0]; if (m) abrir(m.id); }
@@ -920,12 +922,32 @@ function abrir(id) {
   ir('app');
 }
 /** Pide al servidor un pase de un solo uso (2 min) para que la app sepa quién entra y con qué rol */
-function conPase(url) {
+function pedirPase() {
   return sb.rpc('portal_ticket').then(function (r) {
     if (r.error || !r.data) throw r.error || new Error('sin pase');
-    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(r.data);
+    return r.data;
+  });
+}
+/* Pase anticipado: se pide apenas el dedo toca la tarjeta (antes de soltarla), así al abrir ya está listo.
+   Cada pase sirve una sola vez y vence en 2 min; se usa solo si tiene menos de 90 s. */
+var PASE = null;
+function anticiparPase() {
+  if (S.offline || (PASE && Date.now() - PASE.t < 60000)) return;
+  var p = { t: Date.now(), pr: pedirPase() };
+  p.pr.catch(function () { if (PASE === p) PASE = null; });
+  PASE = p;
+}
+function conPase(url) {
+  var p = PASE; PASE = null;
+  var pr = p && Date.now() - p.t < 90000 ? p.pr.catch(pedirPase) : pedirPase();
+  return pr.then(function (k) {
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(k);
   }).catch(function () { return url; });
 }
+document.addEventListener('pointerdown', function (ev) {
+  var t = ev.target.closest && ev.target.closest('[data-app],#bNueva,#fHelpNueva,#fTipNueva,#bRecargar,#fHelpReint');
+  if (t) anticiparPase();
+}, { passive: true, capture: true });
 /* Los enlaces «Abrir aparte» también llevan pase */
 document.addEventListener('click', function (ev) {
   var t = ev.target.closest && ev.target.closest('#bNueva,#fHelpNueva,#fTipNueva');
@@ -1176,13 +1198,18 @@ $('#cVisor').addEventListener('change', function () {
 });
 
 /* ===== Logo animado ===== */
-(function () {
+/* Solo se reproduce el logo que está a la vista (el del acceso se pausa al entrar) y nada corre con la app en segundo plano: ahorra batería */
+function videosVisibles() {
   var quieto = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  $$('.logo-vid video, .logo-card.vid video').forEach(function (v) {
-    if (quieto) { v.removeAttribute('autoplay'); v.pause(); return; }
+  Array.prototype.forEach.call(document.querySelectorAll('.logo-vid video, .logo-card.vid video'), function (v) {
+    v.removeAttribute('autoplay');
+    var ver = !quieto && document.visibilityState !== 'hidden' && v.offsetParent !== null;
+    if (!ver) { v.pause(); return; }
     var p = v.play(); if (p && p.catch) p.catch(function () {}); // algunos teléfonos en ahorro de energía no reproducen: queda la imagen fija
   });
-})();
+}
+document.addEventListener('visibilitychange', videosVisibles);
+videosVisibles();
 
 /* ===== Inicio ===== */
 sb.auth.onAuthStateChange(function (ev) { if (ev === 'SIGNED_OUT' && !$('#shell').hidden) mostrarGate(false); });
